@@ -1,13 +1,12 @@
 
 import { useState, useEffect } from "react";
 import ChatInterface from "@/components/assistant/ChatInterface";
-import { Loader2, Sun, Moon, Home } from "lucide-react";
+import { Loader2, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/hooks/use-theme";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Assistant = () => {
   const [loading, setLoading] = useState(true);
-  const { theme, setTheme } = useTheme();
   
   useEffect(() => {
     // Simulate loading of the assistant
@@ -42,14 +41,7 @@ const Assistant = () => {
         </div>
         
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
+          <ThemeToggle />
           
           <Button variant="outline" size="icon" aria-label="Go to home" asChild>
             <a href="/">
@@ -59,7 +51,7 @@ const Assistant = () => {
         </div>
       </div>
       
-      <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border neo-morphism h-[calc(100vh-180px)]">
+      <div className="bg-background rounded-xl overflow-hidden border neo-morphism h-[calc(100vh-180px)]">
         <ChatInterface />
       </div>
     </div>
