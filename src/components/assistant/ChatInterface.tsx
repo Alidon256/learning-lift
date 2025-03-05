@@ -1,16 +1,17 @@
+
 import React, { useState, useRef, useEffect } from "react";
-import { sendMessage } from "@/services/AIService";
+import { aiService } from "@/services/AIService";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, PaperPlaneIcon, Bot, User } from "lucide-react";
+import { Mic, Send, Bot, User } from "lucide-react";
 import ChatMessage from "./ChatMessage";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  timestamp: Date;
+  timestamp: string;
 }
 
 const ChatInterface = () => {
@@ -38,7 +39,7 @@ const ChatInterface = () => {
       id: Date.now().toString() + "-user",
       role: "user",
       content: input,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
 
     setMessages((prevMessages) => [...prevMessages, userMessage]);
@@ -46,13 +47,13 @@ const ChatInterface = () => {
     setIsTyping(true);
 
     try {
-      const response = await sendMessage(input);
+      const response = await aiService.queryGemini(input);
       if (response) {
         const botMessage: Message = {
           id: Date.now().toString() + "-bot",
           role: "assistant",
-          content: response,
-          timestamp: new Date(),
+          content: response.text,
+          timestamp: new Date().toISOString(),
         };
         setMessages((prevMessages) => [...prevMessages, botMessage]);
       } else {
@@ -111,7 +112,7 @@ const ChatInterface = () => {
           />
           <Button onClick={handleSendMessage} disabled={isTyping}>
             Send
-            <PaperPlaneIcon className="ml-2 h-4 w-4" />
+            <Send className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </div>
