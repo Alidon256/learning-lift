@@ -1,3 +1,4 @@
+
 import { 
   BookOpen, Search, BarChart4, Mic, BookText, MessageSquare, GraduationCap, Users, Building, ArrowRight
 } from "lucide-react";
@@ -84,7 +85,7 @@ const Features = () => {
           {features.map((feature, index) => (
             <div 
               key={index} 
-              className="feature-card animate-scale-in" 
+              className="feature-card animate-scale-in hover:shadow-lg transition-all duration-300" 
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="feature-icon">
@@ -94,9 +95,9 @@ const Features = () => {
               <p className="text-muted-foreground mb-4">{feature.description}</p>
               <Link 
                 to={feature.link} 
-                className="text-primary hover:underline inline-flex items-center"
+                className="text-primary hover:underline inline-flex items-center group"
               >
-                Learn more <ArrowRight className="ml-1 h-4 w-4" />
+                Learn more <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
           ))}
@@ -113,18 +114,21 @@ const Features = () => {
             {userGroups.map((group, index) => (
               <div 
                 key={index} 
-                className="feature-card text-center animate-scale-in" 
+                className="feature-card text-center animate-scale-in hover:shadow-lg transition-all duration-300" 
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="flex justify-center mb-4">
-                  <div className="feature-icon rounded-full">
+                  <div className="feature-icon rounded-full animate-pulse-soft">
                     <group.icon className="h-6 w-6" />
                   </div>
                 </div>
                 <h3 className="text-xl font-semibold mb-3">{group.title}</h3>
                 <p className="text-muted-foreground mb-6">{group.description}</p>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to={group.linkPath}>{group.link}</Link>
+                <Button variant="outline" size="sm" asChild className="group">
+                  <Link to={group.linkPath}>
+                    {group.link}
+                    <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </Link>
                 </Button>
               </div>
             ))}
