@@ -1,6 +1,5 @@
-
 import { 
-  BookOpen, Search, BarChart4, Mic, BookText, MessageSquare, GraduationCap, Users, Building
+  BookOpen, Search, BarChart4, Mic, BookText, MessageSquare, GraduationCap, Users, Building, ArrowRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
