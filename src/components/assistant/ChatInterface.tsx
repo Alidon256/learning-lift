@@ -3,11 +3,14 @@ import React, { useState, useRef, useEffect } from "react";
 import { aiService } from "@/services/AIService";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, Send, Bot, User, Settings, Plus } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Mic, Send, Bot, User, Settings, Plus, Sparkles, Book, Brain, FileText, CalendarClock } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { toast } from "@/components/ui/use-toast";
 import ApiKeyDialog from "./ApiKeyDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { motion, AnimatePresence } from "framer-motion";
+import { SuggestedTool, SuggestedTools } from "./SuggestedTools";
 
 export interface Message {
   id: string;
@@ -21,7 +24,39 @@ const ChatInterface = () => {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(!aiService.hasApiKey());
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const chatBoxRef = useRef<HTMLDivElement>(null);
+
+  const suggestedTools: SuggestedTool[] = [
+    {
+      id: "flashcards",
+      name: "Create Flashcards",
+      description: "Generate study flashcards from your notes or topics",
+      icon: FileText,
+      prompt: "Create flashcards for me about photosynthesis"
+    },
+    {
+      id: "summarize",
+      name: "Summarize Text",
+      description: "Get a concise summary of a complex text",
+      icon: Book,
+      prompt: "Summarize the key concepts of quantum mechanics"
+    },
+    {
+      id: "explain",
+      name: "Explain Concept",
+      description: "Get a simple explanation of a complex concept", 
+      icon: Brain,
+      prompt: "Explain the concept of neural networks in simple terms"
+    },
+    {
+      id: "studyplan",
+      name: "Create Study Plan",
+      description: "Generate a personalized study schedule",
+      icon: CalendarClock,
+      prompt: "Create a study plan for my upcoming calculus exam"
+    }
+  ];
 
   useEffect(() => {
     scrollToBottom();
@@ -33,7 +68,7 @@ const ChatInterface = () => {
       const welcomeMessage: Message = {
         id: "welcome",
         role: "assistant",
-        content: "Hi there! I'm your virtual study assistant. How can I help you today? You can ask me questions about your studies, request explanations of concepts, or get help with assignments.",
+        content: "Hi there! I'm your virtual study assistant powered by Gemini AI. How can I help you today? You can ask me questions about your studies, request explanations of concepts, or get help with assignments.",
         timestamp: new Date().toISOString(),
       };
       setMessages([welcomeMessage]);
@@ -66,6 +101,7 @@ const ChatInterface = () => {
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInput("");
     setIsTyping(true);
+    setShowSuggestions(false);
 
     try {
       const response = await aiService.queryGemini(input);
@@ -105,14 +141,27 @@ const ChatInterface = () => {
 
   const clearChat = () => {
     setMessages([]);
+    aiService.clearHistory();
+    setShowSuggestions(true);
+  };
+
+  const handleToolSelect = (prompt: string) => {
+    setInput(prompt);
+    setShowSuggestions(false);
   };
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b p-2 flex items-center justify-between bg-muted/30">
+      <motion.div 
+        className="border-b p-2 flex items-center justify-between bg-muted/30"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="text-sm font-medium flex items-center gap-2">
           <Bot className="h-4 w-4 text-primary" />
-          AI Assistant
+          <span>AI Assistant</span>
+          <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">Gemini</span>
         </div>
         <div className="flex gap-2">
           <TooltipProvider>
@@ -121,7 +170,7 @@ const ChatInterface = () => {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8" 
+                  className="h-8 w-8 hover:bg-primary/10 transition-all" 
                   onClick={clearChat}
                 >
                   <Plus className="h-4 w-4 rotate-45" />
@@ -139,7 +188,7 @@ const ChatInterface = () => {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8" 
+                  className="h-8 w-8 hover:bg-primary/10 transition-all" 
                   onClick={() => setShowApiKeyDialog(true)}
                 >
                   <Settings className="h-4 w-4" />
@@ -151,24 +200,59 @@ const ChatInterface = () => {
             </Tooltip>
           </TooltipProvider>
         </div>
-      </div>
+      </motion.div>
 
       <div className="flex-grow p-4 overflow-y-auto space-y-4">
-        {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
-        ))}
+        <AnimatePresence>
+          {messages.map((message) => (
+            <motion.div
+              key={message.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ChatMessage message={message} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        
         {isTyping && (
-          <div className="chat-message assistant">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="chat-message assistant"
+          >
             <div className="message-content">
               <Bot className="inline-block h-4 w-4 mr-1" />
               Thinking...
             </div>
-          </div>
+          </motion.div>
         )}
+        
+        <AnimatePresence>
+          {showSuggestions && messages.length <= 1 && !isTyping && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="my-4"
+            >
+              <SuggestedTools tools={suggestedTools} onSelect={handleToolSelect} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
         <div ref={chatBoxRef} />
       </div>
 
-      <div className="p-4 border-t bg-background">
+      <motion.div 
+        className="p-4 border-t bg-background"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.3 }}
+      >
         <div className="flex items-center space-x-2">
           <Textarea
             rows={1}
@@ -176,13 +260,14 @@ const ChatInterface = () => {
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder={aiService.hasApiKey() ? "Type your message..." : "Set up API key first..."}
-            className="flex-grow resize-none"
+            className="flex-grow resize-none rounded-full pl-4 pr-12 py-3"
             disabled={isTyping || !aiService.hasApiKey()}
           />
           <Button 
             onClick={handleSendMessage} 
             disabled={isTyping || !input.trim()}
-            className="transition-all duration-300 hover:scale-105"
+            className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
+            size="icon"
           >
             <Send className="h-4 w-4" />
           </Button>
@@ -192,7 +277,7 @@ const ChatInterface = () => {
             Please set up your Gemini API key in settings to enable chat functionality.
           </p>
         )}
-      </div>
+      </motion.div>
 
       <ApiKeyDialog 
         open={showApiKeyDialog} 

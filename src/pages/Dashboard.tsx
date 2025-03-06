@@ -5,6 +5,8 @@ import UserProfile from "@/components/dashboard/UserProfile";
 import UpcomingSchedule from "@/components/dashboard/UpcomingSchedule";
 import TabsContent from "@/components/dashboard/TabsContent";
 import { Loader2 } from "lucide-react";
+import NavigationDrawer from "@/components/layout/NavigationDrawer";
+import { motion } from "framer-motion";
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -30,20 +32,39 @@ const Dashboard = () => {
   }
   
   return (
-    <div className="container py-8 max-w-7xl animate-fade-in">
-      <DashboardHeader />
+    <>
+      <NavigationDrawer />
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-        <div className="md:col-span-2 space-y-8">
-          <UserProfile />
-          <TabsContent />
-        </div>
+      <motion.div 
+        className="container py-8 max-w-7xl"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <DashboardHeader />
         
-        <div className="space-y-8">
-          <UpcomingSchedule />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          <motion.div 
+            className="md:col-span-2 space-y-8"
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+          >
+            <UserProfile />
+            <TabsContent />
+          </motion.div>
+          
+          <motion.div 
+            className="space-y-8"
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+          >
+            <UpcomingSchedule />
+          </motion.div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </>
   );
 };
 
