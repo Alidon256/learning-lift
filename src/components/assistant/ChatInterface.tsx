@@ -4,7 +4,27 @@ import { aiService } from "@/services/AIService";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mic, Send, Bot, User, Settings, Plus, Sparkles, Book, Brain, FileText, CalendarClock } from "lucide-react";
+import { 
+  Mic, 
+  Send, 
+  Bot, 
+  User, 
+  Settings, 
+  Plus, 
+  Sparkles, 
+  Book, 
+  Brain, 
+  FileText, 
+  CalendarClock,
+  BookText,
+  GraduationCap,
+  Calculator,
+  Lightbulb,
+  History,
+  BookOpen,
+  Dices,
+  BarChart
+} from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { toast } from "@/components/ui/use-toast";
 import ApiKeyDialog from "./ApiKeyDialog";
@@ -25,7 +45,9 @@ const ChatInterface = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(!aiService.hasApiKey());
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [isListening, setIsListening] = useState(false);
   const chatBoxRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const suggestedTools: SuggestedTool[] = [
     {
@@ -33,29 +55,68 @@ const ChatInterface = () => {
       name: "Create Flashcards",
       description: "Generate study flashcards from your notes or topics",
       icon: FileText,
-      prompt: "Create flashcards for me about photosynthesis"
+      prompt: "Create flashcards for me about photosynthesis",
+      category: "Study"
     },
     {
       id: "summarize",
       name: "Summarize Text",
       description: "Get a concise summary of a complex text",
-      icon: Book,
-      prompt: "Summarize the key concepts of quantum mechanics"
+      icon: BookText,
+      prompt: "Summarize the key concepts of quantum mechanics",
+      isPopular: true,
+      category: "Learning"
     },
     {
       id: "explain",
       name: "Explain Concept",
       description: "Get a simple explanation of a complex concept", 
       icon: Brain,
-      prompt: "Explain the concept of neural networks in simple terms"
+      prompt: "Explain the concept of neural networks in simple terms",
+      isPopular: true,
+      category: "Learning"
     },
     {
       id: "studyplan",
       name: "Create Study Plan",
       description: "Generate a personalized study schedule",
       icon: CalendarClock,
-      prompt: "Create a study plan for my upcoming calculus exam"
-    }
+      prompt: "Create a study plan for my upcoming calculus exam",
+      category: "Planning"
+    },
+    {
+      id: "practice",
+      name: "Practice Questions",
+      description: "Generate practice questions on any topic",
+      icon: Dices,
+      prompt: "Create 5 practice questions about organic chemistry",
+      category: "Practice"
+    },
+    {
+      id: "research",
+      name: "Research Helper",
+      description: "Get help finding sources and information",
+      icon: BookOpen,
+      prompt: "Help me find good sources for my essay on climate change",
+      category: "Research"
+    },
+    {
+      id: "math",
+      name: "Math Problem Solver",
+      description: "Get step-by-step solutions to math problems",
+      icon: Calculator,
+      prompt: "Help me solve this equation: 2x + 5 = 13",
+      category: "Problem"
+    },
+    {
+      id: "insights",
+      name: "Learning Insights",
+      description: "Get insights on how to improve your learning",
+      icon: Lightbulb,
+      prompt: "Give me tips to improve my study habits and retention",
+      isPopular: true,
+      category: "Tips"
+    },
   ];
 
   useEffect(() => {
@@ -75,12 +136,73 @@ const ChatInterface = () => {
     }
   }, [messages]);
 
+  useEffect(() => {
+    // Auto-focus the textarea when loaded
+    if (textareaRef.current && aiService.hasApiKey()) {
+      textareaRef.current.focus();
+    }
+  }, []);
+
+  // Handle speech recognition
+  useEffect(() => {
+    let recognition: SpeechRecognition | null = null;
+    
+    if (isListening) {
+      try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        
+        recognition.onresult = (event) => {
+          const transcript = Array.from(event.results)
+            .map(result => result[0])
+            .map(result => result.transcript)
+            .join('');
+          
+          setInput(transcript);
+        };
+        
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error', event.error);
+          setIsListening(false);
+          toast({
+            title: "Speech Recognition Error",
+            description: "There was a problem with speech recognition. Please try again.",
+            variant: "destructive",
+          });
+        };
+        
+        recognition.start();
+      } catch (error) {
+        console.error('Speech recognition not supported', error);
+        setIsListening(false);
+        toast({
+          description: "Speech recognition is not supported in your browser.",
+          variant: "destructive",
+        });
+      }
+    }
+    
+    return () => {
+      if (recognition) {
+        recognition.stop();
+      }
+    };
+  }, [isListening]);
+
   const scrollToBottom = () => {
     chatBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
+    
+    // Auto resize textarea
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
   };
 
   const handleSendMessage = async () => {
@@ -102,6 +224,11 @@ const ChatInterface = () => {
     setInput("");
     setIsTyping(true);
     setShowSuggestions(false);
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
 
     try {
       const response = await aiService.queryGemini(input);
@@ -129,6 +256,7 @@ const ChatInterface = () => {
       });
     } finally {
       setIsTyping(false);
+      setIsListening(false);
     }
   };
 
@@ -147,7 +275,13 @@ const ChatInterface = () => {
 
   const handleToolSelect = (prompt: string) => {
     setInput(prompt);
-    setShowSuggestions(false);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
+
+  const toggleSpeechRecognition = () => {
+    setIsListening(!isListening);
   };
 
   return (
@@ -253,25 +387,63 @@ const ChatInterface = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.3 }}
       >
-        <div className="flex items-center space-x-2">
+        <div className="flex items-end space-x-2">
           <Textarea
+            ref={textareaRef}
             rows={1}
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={aiService.hasApiKey() ? "Type your message..." : "Set up API key first..."}
-            className="flex-grow resize-none rounded-full pl-4 pr-12 py-3"
+            placeholder={aiService.hasApiKey() ? "Ask me anything..." : "Set up API key first..."}
+            className="flex-grow resize-none rounded-full pl-4 pr-12 py-3 min-h-[50px] max-h-[120px]"
             disabled={isTyping || !aiService.hasApiKey()}
           />
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={isTyping || !input.trim()}
-            className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
-            size="icon"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <div className="flex space-x-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant={isListening ? "default" : "outline"}
+                    size="icon"
+                    className={`rounded-full w-10 h-10 p-0 flex items-center justify-center ${isListening ? 'bg-red-500 hover:bg-red-600' : ''}`}
+                    onClick={toggleSpeechRecognition}
+                    disabled={!aiService.hasApiKey() || isTyping}
+                  >
+                    <Mic className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isListening ? "Stop listening" : "Voice input"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={handleSendMessage} 
+                    disabled={isTyping || !input.trim() || !aiService.hasApiKey()}
+                    className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
+                    size="icon"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Send message</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
+        
+        {isListening && (
+          <div className="mt-2 text-xs text-center animate-pulse text-primary">
+            Listening... Speak clearly into your microphone
+          </div>
+        )}
+        
         {!aiService.hasApiKey() && (
           <p className="text-xs text-muted-foreground mt-2 animate-pulse">
             Please set up your Gemini API key in settings to enable chat functionality.
