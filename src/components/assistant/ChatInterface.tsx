@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { aiService } from "@/services/AIService";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Mic, 
   Send, 
@@ -23,7 +23,8 @@ import {
   History,
   BookOpen,
   Dices,
-  BarChart
+  BarChart,
+  RefreshCw
 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { toast } from "@/components/ui/use-toast";
@@ -31,12 +32,22 @@ import ApiKeyDialog from "./ApiKeyDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 import { SuggestedTool, SuggestedTools } from "./SuggestedTools";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: string;
+}
+
+interface SuggestedDocument {
+  id: string;
+  title: string;
+  source: string;
+  url: string;
+  snippet: string;
 }
 
 const ChatInterface = () => {
@@ -46,6 +57,9 @@ const ChatInterface = () => {
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(!aiService.hasApiKey());
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [isListening, setIsListening] = useState(false);
+  const [suggestedTopics, setSuggestedTopics] = useState<{id: string; title: string; prompt: string}[]>([]);
+  const [suggestedDocs, setSuggestedDocs] = useState<SuggestedDocument[]>([]);
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const chatBoxRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -116,6 +130,22 @@ const ChatInterface = () => {
       prompt: "Give me tips to improve my study habits and retention",
       isPopular: true,
       category: "Tips"
+    },
+    {
+      id: "history",
+      name: "Historical Context",
+      description: "Learn about the historical background of any topic",
+      icon: History,
+      prompt: "Explain the historical development of calculus",
+      category: "History"
+    },
+    {
+      id: "analysis",
+      name: "Data Analysis",
+      description: "Get help analyzing and interpreting data",
+      icon: BarChart,
+      prompt: "Help me interpret these survey results",
+      category: "Data"
     },
   ];
 
@@ -205,6 +235,54 @@ const ChatInterface = () => {
     }
   };
 
+  const generateSuggestedTopics = async (userInput: string, aiResponse: string) => {
+    setIsFetchingSuggestions(true);
+    
+    try {
+      // In a real implementation, we would call an API to get related topics based on the conversation
+      // Here, we'll simulate it with some sample topics
+      const suggestions = [
+        { id: "t1", title: "Related mathematical concepts", prompt: `Explain the mathematical concepts related to: ${userInput}` },
+        { id: "t2", title: "Historical development", prompt: `Describe the historical development of: ${userInput}` },
+        { id: "t3", title: "Practical applications", prompt: `What are the practical applications of: ${userInput}` },
+        { id: "t4", title: "Common misconceptions", prompt: `What are common misconceptions about: ${userInput}` }
+      ];
+      
+      setSuggestedTopics(suggestions);
+      
+      // Simulate fetching recommended documents
+      const docs = [
+        {
+          id: "d1",
+          title: `Understanding ${userInput.split(' ').slice(0, 3).join(' ')}...`,
+          source: "Khan Academy",
+          url: "https://www.khanacademy.org",
+          snippet: "This comprehensive guide explains the fundamental concepts and applications..."
+        },
+        {
+          id: "d2",
+          title: `Advanced ${userInput.split(' ').slice(0, 2).join(' ')} Tutorial`,
+          source: "MIT OpenCourseWare",
+          url: "https://ocw.mit.edu",
+          snippet: "Designed for advanced students, this resource covers complex topics and practical examples..."
+        },
+        {
+          id: "d3",
+          title: `${userInput.split(' ').slice(0, 2).join(' ')} for Beginners`,
+          source: "Coursera",
+          url: "https://www.coursera.org",
+          snippet: "Start your learning journey with this beginner-friendly introduction to key concepts..."
+        }
+      ];
+      
+      setSuggestedDocs(docs);
+    } catch (error) {
+      console.error("Error generating suggestions:", error);
+    } finally {
+      setIsFetchingSuggestions(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim()) return;
 
@@ -240,6 +318,9 @@ const ChatInterface = () => {
           timestamp: new Date().toISOString(),
         };
         setMessages((prevMessages) => [...prevMessages, botMessage]);
+        
+        // Generate suggested topics and documents based on conversation
+        generateSuggestedTopics(input, response.text);
       } else {
         toast({
           title: "Error",
@@ -271,6 +352,8 @@ const ChatInterface = () => {
     setMessages([]);
     aiService.clearHistory();
     setShowSuggestions(true);
+    setSuggestedTopics([]);
+    setSuggestedDocs([]);
   };
 
   const handleToolSelect = (prompt: string) => {
@@ -280,8 +363,26 @@ const ChatInterface = () => {
     }
   };
 
+  const handleSuggestedTopicSelect = (prompt: string) => {
+    setInput(prompt);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
+
   const toggleSpeechRecognition = () => {
     setIsListening(!isListening);
+  };
+
+  const refreshSuggestions = () => {
+    if (messages.length < 2) return;
+    
+    const lastUserMessage = messages.filter(m => m.role === "user").pop();
+    const lastBotMessage = messages.filter(m => m.role === "assistant").pop();
+    
+    if (lastUserMessage && lastBotMessage) {
+      generateSuggestedTopics(lastUserMessage.content, lastBotMessage.content);
+    }
   };
 
   return (
@@ -455,6 +556,74 @@ const ChatInterface = () => {
         open={showApiKeyDialog} 
         onOpenChange={setShowApiKeyDialog} 
       />
+      
+      {/* Suggested Topics and Documents Sidebar (built into the same component) */}
+      {(suggestedTopics.length > 0 || suggestedDocs.length > 0) && messages.length > 1 && (
+        <motion.div 
+          className="border-t p-3 bg-muted/20 space-y-4 max-h-[300px] overflow-auto"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-medium">Related to your conversation</h3>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={refreshSuggestions}
+              disabled={isFetchingSuggestions}
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          
+          {suggestedTopics.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-medium text-muted-foreground">Suggested Topics</h4>
+              <div className="flex flex-wrap gap-2">
+                {suggestedTopics.map(topic => (
+                  <Button
+                    key={topic.id}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7 bg-background/80"
+                    onClick={() => handleSuggestedTopicSelect(topic.prompt)}
+                  >
+                    {topic.title}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {suggestedDocs.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-medium text-muted-foreground">Recommended Resources</h4>
+              <div className="space-y-2">
+                {suggestedDocs.map(doc => (
+                  <Card key={doc.id} className="overflow-hidden">
+                    <CardContent className="p-2 text-xs space-y-1">
+                      <a 
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium hover:text-primary transition-colors line-clamp-1"
+                      >
+                        {doc.title}
+                      </a>
+                      <p className="text-muted-foreground text-[11px] line-clamp-2">{doc.snippet}</p>
+                      <Badge variant="outline" className="text-[10px] h-4">
+                        {doc.source}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
     </div>
   );
 };

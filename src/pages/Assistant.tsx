@@ -168,6 +168,7 @@ const Assistant = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
+        <NavigationDrawer />
         <motion.div 
           className="text-center"
           initial={{ opacity: 0, scale: 0.9 }}

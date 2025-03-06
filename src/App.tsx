@@ -15,6 +15,7 @@ import Resources from "./pages/Resources";
 import StudentFeatures from "./pages/StudentFeatures";
 import EducatorTools from "./pages/EducatorTools";
 import InstitutionBenefits from "./pages/InstitutionBenefits";
+import NavigationDrawer from "@/components/layout/NavigationDrawer";
 
 const queryClient = new QueryClient();
 

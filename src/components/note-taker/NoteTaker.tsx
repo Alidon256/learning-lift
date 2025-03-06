@@ -136,29 +136,39 @@ const NoteTaker = () => {
       const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
       const audioUrl = URL.createObjectURL(audioBlob);
       
-      const newLecture: Lecture = {
-        id: uuidv4(),
-        title: newLectureTitle,
-        date: new Date().toLocaleDateString(),
-        duration: formatTime(recordingTime),
-        audioUrl,
+      // Store the audio data in localStorage for persistence
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = function() {
+        const base64data = reader.result as string;
+        
+        // Save the audio data to localStorage (note: this has size limitations)
+        localStorage.setItem(`lecture_audio_${uuidv4()}`, base64data);
+        
+        const newLecture: Lecture = {
+          id: uuidv4(),
+          title: newLectureTitle,
+          date: new Date().toLocaleDateString(),
+          duration: formatTime(recordingTime),
+          audioUrl,
+        };
+        
+        setLectures(prev => [newLecture, ...prev]);
+        setShowTitleDialog(false);
+        setNewLectureTitle("");
+        setAudioChunks([]);
+        
+        toast({
+          title: "Lecture saved",
+          description: "Your lecture has been saved to the library.",
+        });
+        
+        // Ask if user wants to transcribe
+        const shouldTranscribe = window.confirm("Would you like to transcribe this lecture?");
+        if (shouldTranscribe) {
+          transcribeLecture(newLecture);
+        }
       };
-      
-      setLectures(prev => [newLecture, ...prev]);
-      setShowTitleDialog(false);
-      setNewLectureTitle("");
-      setAudioChunks([]);
-      
-      toast({
-        title: "Lecture saved",
-        description: "Your lecture has been saved to the library.",
-      });
-      
-      // Ask if user wants to transcribe
-      const shouldTranscribe = window.confirm("Would you like to transcribe this lecture?");
-      if (shouldTranscribe) {
-        transcribeLecture(newLecture);
-      }
     } catch (error) {
       console.error("Error saving lecture:", error);
       toast({
