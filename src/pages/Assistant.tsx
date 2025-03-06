@@ -1,14 +1,17 @@
 
 import { useState, useEffect } from "react";
 import ChatInterface from "@/components/assistant/ChatInterface";
-import { Loader2, Bot } from "lucide-react";
+import { Loader2, Bot, BrainCircuit, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import NavigationDrawer from "@/components/layout/NavigationDrawer";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const Assistant = () => {
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   
   useEffect(() => {
     // Simulate loading of the assistant
@@ -40,7 +43,7 @@ const Assistant = () => {
               repeatType: "loop"
             }}
           >
-            <Bot className="h-8 w-8 text-primary" />
+            <BrainCircuit className="h-8 w-8 text-primary" />
           </motion.div>
           <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto mb-4" />
           <p className="text-lg font-medium">Loading your AI assistant...</p>
@@ -55,7 +58,7 @@ const Assistant = () => {
       <NavigationDrawer />
       
       <motion.div 
-        className="container max-w-4xl py-8"
+        className="container max-w-5xl py-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -68,22 +71,32 @@ const Assistant = () => {
         >
           <div className="flex items-center gap-3">
             <motion.div 
-              className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary"
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Bot className="h-6 w-6" />
+              <BrainCircuit className="h-6 w-6" />
             </motion.div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">AI Study Assistant</h1>
+                <h1 className="text-2xl font-bold">Smart Study Assistant</h1>
                 <Badge className="bg-primary/20 text-primary hover:bg-primary/30">Gemini</Badge>
+                <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-200">2.0</Badge>
               </div>
               <p className="text-sm text-muted-foreground">Ask any question about your studies or get help with assignments</p>
             </div>
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            <Button 
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => navigate('/note-taker')}
+            >
+              <Sparkles className="h-4 w-4" />
+              Note Taker
+            </Button>
             <ThemeToggle />
           </div>
         </motion.div>

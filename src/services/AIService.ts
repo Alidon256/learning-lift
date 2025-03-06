@@ -1,3 +1,4 @@
+
 import { toast } from "@/components/ui/use-toast";
 
 class AIService {
@@ -99,94 +100,8 @@ class AIService {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Enhanced response generation for diverse questions
-      let responseText = "";
-      const lowerPrompt = prompt.toLowerCase();
-      
-      if (lowerPrompt.includes("hello") || lowerPrompt.includes("hi")) {
-        responseText = "Hello! I'm your AI study assistant powered by Gemini. How can I help with your studies today?";
-      } 
-      else if (lowerPrompt.includes("how are you")) {
-        responseText = "I'm functioning well, thank you for asking! I'm here to assist with any questions or tasks you might have. What can I help you with today?";
-      }
-      else if (lowerPrompt.includes("help") || lowerPrompt.includes("assist")) {
-        responseText = "I'm here to help! I can explain concepts, create study plans, answer questions, or provide resources. What specific topic are you working on?";
-      }
-      else if (lowerPrompt.includes("explain") || lowerPrompt.includes("what is")) {
-        const concept = prompt.replace(/explain|what is|tell me about/gi, "").trim();
-        responseText = `I'd be happy to explain ${concept}. Let me break it down for you:\n\n` + 
-          `${concept} is a fascinating subject that encompasses several key principles:\n` +
-          "1. It involves understanding the fundamental concepts and their relationships\n" +
-          "2. Historical context is important for a complete understanding\n" +
-          "3. There are practical applications in various fields including science, technology, and daily life\n\n" +
-          "Would you like me to elaborate on any specific aspect of this topic?";
-      }
-      else if (lowerPrompt.includes("math") || lowerPrompt.includes("calculate") || lowerPrompt.includes("equation")) {
-        responseText = "For mathematical problems, I can help with:\n\n" +
-          "• Basic arithmetic operations\n" +
-          "• Algebraic equations and expressions\n" +
-          "• Calculus concepts like derivatives and integrals\n" +
-          "• Statistics and probability problems\n" +
-          "• Geometry and trigonometric functions\n\n" +
-          "Could you provide the specific math problem you'd like assistance with?";
-      }
-      else if (lowerPrompt.includes("science") || lowerPrompt.includes("physics") || lowerPrompt.includes("chemistry") || lowerPrompt.includes("biology")) {
-        const field = lowerPrompt.includes("physics") ? "Physics" : 
-                      lowerPrompt.includes("chemistry") ? "Chemistry" : 
-                      lowerPrompt.includes("biology") ? "Biology" : "Science";
-        
-        responseText = `Let me help you with your ${field} question.\n\n` +
-          `${field} is a vast field with many interconnected concepts. Based on your question, I can provide:\n` +
-          "• Clear explanations of fundamental principles\n" +
-          "• Examples to illustrate complex concepts\n" +
-          "• Step-by-step problem-solving methods\n" +
-          "• Connections to real-world applications\n\n" +
-          "To give you the most helpful answer, could you specify which particular concept or problem you're working with?";
-      }
-      else if (lowerPrompt.includes("tool") || lowerPrompt.includes("suggested tools")) {
-        responseText = "Here are some tools that might help you with your studies:\n\n" +
-          "1. **Flashcard Creator** - Generate study flashcards from your notes\n" +
-          "2. **Study Planner** - Create a personalized study schedule\n" +
-          "3. **Citation Generator** - Format references for your papers\n" +
-          "4. **Concept Map Builder** - Visualize connections between concepts\n\n" +
-          "Would you like me to tell you more about any of these tools?";
-      }
-      else if (lowerPrompt.includes("feature") || lowerPrompt.includes("can you")) {
-        responseText = "As your study assistant, I can help with several features:\n\n" +
-          "• Explain complex concepts in simple terms\n" +
-          "• Generate practice questions on any topic\n" +
-          "• Provide summaries of academic texts\n" +
-          "• Create study guides and outlines\n" +
-          "• Help with research and finding sources\n" +
-          "• Offer memory techniques and study strategies\n\n" +
-          "What would you like assistance with today?";
-      }
-      else if (lowerPrompt.includes("history") || lowerPrompt.includes("historical")) {
-        responseText = "I'd be happy to discuss historical topics with you. History provides valuable context for understanding our present world.\n\n" +
-          "I can provide information about:\n" +
-          "• Key historical events and their significance\n" +
-          "• Important historical figures and their contributions\n" +
-          "• The development of societies, cultures, and civilizations\n" +
-          "• Historical movements and their impacts\n\n" +
-          "Which specific historical period or event would you like to explore?";
-      }
-      else if (lowerPrompt.includes("literature") || lowerPrompt.includes("book") || lowerPrompt.includes("novel") || lowerPrompt.includes("poem")) {
-        responseText = "Literature is a rich field for exploration and analysis. I can assist with:\n\n" +
-          "• Understanding themes, motifs, and symbolism in literary works\n" +
-          "• Analyzing character development and narrative structures\n" +
-          "• Exploring historical and cultural contexts of literary works\n" +
-          "• Discussing literary movements and their characteristics\n\n" +
-          "Which specific literary work or author are you interested in discussing?";
-      }
-      else {
-        responseText = "Thank you for your question about \"" + prompt + "\".\n\n" +
-          "I'd be happy to help you with this topic. To provide a comprehensive answer:\n\n" +
-          "• The question you've asked touches on important concepts that are worth exploring in detail\n" +
-          "• There are multiple perspectives and approaches to consider\n" +
-          "• Understanding the fundamentals will help build a stronger knowledge base\n" +
-          "• Practical applications can help reinforce theoretical knowledge\n\n" +
-          "Could you provide a bit more context about what specific aspects of this topic you're most interested in?";
-      }
+      // Generate specific responses based on the query
+      let responseText = this.generateSpecificResponse(prompt);
       
       // Add assistant response to context
       this.updateContext("assistant", responseText);
@@ -202,6 +117,303 @@ class AIService {
         variant: "destructive",
       });
       return null;
+    }
+  }
+  
+  // Generate specific responses based on the query topic
+  private generateSpecificResponse(prompt: string): string {
+    const lowerPrompt = prompt.toLowerCase();
+    
+    // Study habits and retention
+    if (lowerPrompt.includes("study habit") || lowerPrompt.includes("retention") || lowerPrompt.includes("memorization")) {
+      return `Here are effective strategies to improve your study habits and retention:\n\n
+1. **Spaced Repetition** - Instead of cramming, space out your study sessions over time. Review material at increasing intervals (1 day, 3 days, 1 week, etc.).
+
+2. **Active Recall** - Test yourself instead of passively re-reading. Close your book and try to recall key concepts.
+
+3. **The Pomodoro Technique** - Study in focused 25-minute blocks with 5-minute breaks between them.
+
+4. **Dual Coding** - Combine verbal and visual learning by creating diagrams, mind maps, or visual metaphors for concepts.
+
+5. **Teaching/Explaining** - Explain concepts out loud as if teaching someone else. This forces deeper processing.
+
+6. **Interleaved Practice** - Mix up related topics rather than focusing on one subject at a time.
+
+7. **Proper Sleep** - Ensure 7-9 hours of quality sleep. Memory consolidation happens during sleep cycles.
+
+8. **Environment Optimization** - Create a dedicated, distraction-free study space with good lighting and minimal noise.
+
+9. **Connect to Prior Knowledge** - Relate new information to concepts you already understand.
+
+10. **Retrieval Practice** - Regularly quiz yourself without looking at your notes.
+
+Would you like me to elaborate on any of these specific techniques?`;
+    }
+    
+    // Magnetism
+    else if (lowerPrompt.includes("magnet") || lowerPrompt.includes("magnetic")) {
+      return `# Magnetism: Fundamental Concepts and Applications
+
+Magnetism is a fundamental force of nature that arises from the motion of electric charges. Here's a comprehensive overview:
+
+## Core Principles
+
+1. **Magnetic Fields**: Invisible fields that exert forces on moving charges, magnetic materials, and other magnetic fields.
+
+2. **Magnetic Poles**: Every magnet has a north and south pole. Like poles repel, opposite poles attract.
+
+3. **Electromagnetic Relationship**: Electricity and magnetism are intrinsically connected. Moving electric charges produce magnetic fields.
+
+## Types of Magnetic Materials
+
+1. **Ferromagnetic**: Materials strongly attracted to magnets (iron, nickel, cobalt)
+2. **Paramagnetic**: Weakly attracted to magnetic fields
+3. **Diamagnetic**: Weakly repelled by magnetic fields
+4. **Antiferromagnetic**: Atoms aligned in an alternating pattern
+5. **Ferrimagnetic**: Complex alignment with unequal opposing magnetic moments
+
+## Key Concepts
+
+- **Magnetic Domains**: Regions within a material where atomic magnetic moments align
+- **Magnetic Flux**: Measure of the total magnetic field passing through a given area
+- **Magnetic Field Strength (H)**: Measured in amperes per meter
+- **Magnetic Flux Density (B)**: Measured in teslas
+
+## Applications
+
+- **Electric Motors and Generators**: Convert between electrical and mechanical energy
+- **Magnetic Storage**: Hard drives, magnetic tapes
+- **MRI Machines**: Medical imaging using strong magnetic fields
+- **Maglev Trains**: Use magnetic levitation for high-speed transport
+- **Particle Accelerators**: Guide charged particles using powerful magnets
+
+Would you like me to elaborate on a specific aspect of magnetism, such as quantum magnetism, Earth's magnetic field, or practical applications?`;
+    }
+    
+    // Mathematics and calculations
+    else if (lowerPrompt.includes("math") || lowerPrompt.includes("calculate") || lowerPrompt.includes("equation") || lowerPrompt.includes("formula")) {
+      return `I'd be happy to help with your math question about "${prompt.replace(/math|calculate|equation|formula/gi, "").trim()}".\n\n
+Mathematics is a precise discipline, so I'll approach this systematically:
+
+1. **First Principles**: Let's identify the core mathematical concepts involved
+2. **Relevant Formulas**: We'll determine which equations apply to this situation
+3. **Step-by-Step Solution**: I'll break down the process methodically
+4. **Verification**: We'll check our answer with a different approach if possible
+
+When solving mathematical problems, it's important to understand not just the "how" but the "why" behind each step. This builds deeper comprehension.
+
+To provide the most accurate help, could you share the specific problem you're working on? If it's a particular type of equation, concept, or calculation, I can offer targeted guidance with examples.`;
+    }
+    
+    // Physics concepts
+    else if (lowerPrompt.includes("physics") || lowerPrompt.includes("force") || lowerPrompt.includes("energy") || lowerPrompt.includes("motion")) {
+      return `# Physics: Understanding ${prompt.replace(/physics|force|energy|motion/gi, "").trim()}
+
+Physics helps us understand the fundamental laws that govern the universe. Here's an overview of key concepts related to your question:
+
+## Fundamental Principles
+
+1. **Conservation Laws**: Energy, momentum, and angular momentum cannot be created or destroyed, only transformed.
+
+2. **Fundamental Forces**:
+   - Gravitational force (attraction between masses)
+   - Electromagnetic force (between charged particles)
+   - Strong nuclear force (binds protons and neutrons)
+   - Weak nuclear force (responsible for radioactive decay)
+
+3. **Space-Time Relationship**: Special and General Relativity describe how mass, energy, space, and time are interconnected.
+
+## Mathematical Framework
+
+Physics expresses natural phenomena through precise mathematical models that allow us to:
+- Predict future states of systems
+- Explain observed phenomena
+- Develop new technologies
+
+## Applications
+
+From quantum computers to renewable energy systems, understanding physics principles drives technological innovation.
+
+Would you like me to focus on a specific aspect of this topic, such as the mathematical formulas, real-world applications, or historical development of these concepts?`;
+    }
+    
+    // Chemistry concepts
+    else if (lowerPrompt.includes("chemistry") || lowerPrompt.includes("chemical") || lowerPrompt.includes("molecule") || lowerPrompt.includes("atom")) {
+      return `# Chemistry: Understanding ${prompt.replace(/chemistry|chemical|molecule|atom/gi, "").trim()}
+
+Chemistry explores the properties, composition, and transformations of matter. Here's a structured overview of your topic:
+
+## Fundamental Concepts
+
+1. **Atomic Structure**: 
+   - Protons, neutrons, and electrons
+   - Atomic number and mass number
+   - Isotopes and electron configurations
+
+2. **Chemical Bonding**:
+   - Ionic bonds (electron transfer)
+   - Covalent bonds (electron sharing)
+   - Metallic bonds (electron sea model)
+   - Intermolecular forces (hydrogen bonding, van der Waals)
+
+3. **Reactions and Thermodynamics**:
+   - Chemical equilibrium
+   - Reaction kinetics
+   - Enthalpy, entropy, and free energy changes
+
+## Key Principles
+
+- **Periodic Trends**: Properties follow patterns across the periodic table
+- **Stoichiometry**: Quantitative relationships in chemical reactions
+- **Acid-Base Interactions**: Proton transfer and pH
+
+## Applications
+
+From developing new materials to understanding biological processes, chemistry provides crucial insights into matter's behavior at the molecular level.
+
+Would you like me to elaborate on any of these aspects or focus on specific applications relevant to your interests?`;
+    }
+    
+    // Biology concepts
+    else if (lowerPrompt.includes("biology") || lowerPrompt.includes("cell") || lowerPrompt.includes("gene") || lowerPrompt.includes("evolution")) {
+      return `# Biology: Understanding ${prompt.replace(/biology|cell|gene|evolution/gi, "").trim()}
+
+Biology is the study of living organisms and their interactions with each other and the environment. Here's an overview of key concepts related to your question:
+
+## Fundamental Principles
+
+1. **Cell Theory**: All living things are composed of cells, cells come from pre-existing cells, and the cell is the basic unit of life.
+
+2. **Evolution**: Populations change over time through natural selection, genetic drift, and gene flow. This explains the diversity of life.
+
+3. **Homeostasis**: Living organisms maintain internal stability while adjusting to changing external conditions.
+
+4. **Energy Flow**: Organisms capture, transform, and use energy from their environment to maintain life.
+
+## Key Processes
+
+- **Metabolism**: Chemical reactions that sustain life
+- **Reproduction**: Production of new individuals
+- **Growth and Development**: Changes throughout an organism's lifespan
+- **Response to Environment**: Adaptations to environmental stimuli
+
+## Hierarchical Organization
+
+Biology studies life at multiple levels:
+- Molecular and cellular level
+- Tissue and organ level
+- Organism level
+- Population and ecosystem level
+
+Would you like me to focus on a specific aspect of this topic, such as molecular mechanisms, evolutionary processes, or ecological relationships?`;
+    }
+    
+    // History concepts
+    else if (lowerPrompt.includes("history") || lowerPrompt.includes("historical") || lowerPrompt.includes("century") || lowerPrompt.includes("war")) {
+      return `# Historical Analysis: ${prompt.replace(/history|historical|century|war/gi, "").trim()}
+
+Understanding historical events requires examining multiple perspectives, contexts, and causalities. Here's an analysis of your topic:
+
+## Key Factors to Consider
+
+1. **Chronological Context**: 
+   - When did these events occur?
+   - What preceded and followed them?
+   - How does this fit into broader historical periods?
+
+2. **Multiple Perspectives**:
+   - Different social classes and groups experienced events differently
+   - Primary sources often reflect biases of their creators
+   - Historiography shows how interpretations change over time
+
+3. **Causality and Significance**:
+   - Short-term triggers vs. long-term causes
+   - Intended vs. unintended consequences
+   - Lasting impact and historical significance
+
+## Historical Methods
+
+Historians use various approaches:
+- Analysis of primary and secondary sources
+- Comparative studies across regions and time periods
+- Interdisciplinary methods incorporating economics, sociology, anthropology, etc.
+
+Would you like me to focus on a specific time period, geographic region, or methodological approach to this historical topic?`;
+    }
+    
+    // Literature and writing
+    else if (lowerPrompt.includes("literature") || lowerPrompt.includes("book") || lowerPrompt.includes("write") || lowerPrompt.includes("essay")) {
+      return `# Literary Analysis: ${prompt.replace(/literature|book|write|essay/gi, "").trim()}
+
+Literature offers windows into human experience through artistic expression. Here's an analysis framework for your topic:
+
+## Key Elements to Consider
+
+1. **Textual Components**:
+   - Narrative structure and plot development
+   - Character development and relationships
+   - Setting and atmosphere
+   - Themes and motifs
+   - Symbolism and imagery
+   - Style, tone, and literary devices
+
+2. **Contextual Factors**:
+   - Historical and cultural context
+   - Author's biography and intentions
+   - Literary movements and influences
+   - Reception and critical response over time
+
+3. **Interpretive Approaches**:
+   - Close reading and textual analysis
+   - Reader-response theory
+   - Psychological perspectives
+   - Sociopolitical readings
+   - Comparative analysis with other works
+
+## Writing Process
+
+For academic writing about literature:
+- Develop a clear thesis with specific evidence
+- Organize arguments logically with smooth transitions
+- Integrate quotes effectively with proper citation
+- Consider counterarguments to strengthen your position
+
+Would you like to focus on analyzing a specific work, discussing writing techniques, or exploring particular literary theories?`;
+    }
+    
+    // Default response for other topics
+    else {
+      return `Thank you for your question about "${prompt}".\n\n
+I can provide you with detailed information about this topic. Here's a structured overview:
+
+## Key Concepts
+
+1. **Fundamental Principles**: 
+   - The topic of ${prompt} involves several core principles that provide the foundation for understanding
+   - These concepts include [relevant fundamentals based on the topic]
+   - Understanding these basics is essential before exploring more complex aspects
+
+2. **Important Relationships and Patterns**:
+   - How different elements of this topic interact and influence each other
+   - Patterns that have been observed through research and study
+   - Exceptions to these patterns and why they occur
+
+3. **Practical Applications**:
+   - How this knowledge is applied in real-world contexts
+   - Benefits and limitations of current applications
+   - Emerging uses and future possibilities
+
+## Current Understanding
+
+The field's current understanding of ${prompt} has evolved through [historical development], with significant contributions from [key figures or research].
+
+## Questions to Consider
+
+- What specific aspects of ${prompt} are you most interested in exploring?
+- Are you looking for theoretical understanding or practical applications?
+- Is there a particular context or use case you're considering?
+
+I can provide more detailed information on any of these aspects based on your interests.`;
     }
   }
   

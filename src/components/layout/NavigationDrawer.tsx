@@ -9,8 +9,6 @@ import {
   Book, 
   MessageSquare, 
   BookOpen, 
-  LineChart, 
-  CalendarDays, 
   Settings, 
   Menu, 
   X,
@@ -24,7 +22,12 @@ import {
   Users,
   BarChart,
   Award,
-  Search
+  Search,
+  BrainCircuit,
+  ActivitySquare,
+  Lightbulb,
+  Rocket,
+  DoorOpen
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { 
@@ -34,6 +37,7 @@ import {
   TooltipTrigger 
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface NavItem {
   name: string;
@@ -42,17 +46,19 @@ interface NavItem {
   description?: string;
   badge?: string;
   isNew?: boolean;
+  isUpdated?: boolean;
 }
 
 const mainNavItems: NavItem[] = [
   { name: "Home", icon: Home, path: "/", description: "Return to homepage" },
   { name: "Dashboard", icon: Layers, path: "/dashboard", description: "Your personal dashboard" },
   { 
-    name: "Assistant", 
-    icon: MessageSquare, 
+    name: "Smart Assistant", 
+    icon: BrainCircuit, 
     path: "/assistant", 
     description: "Chat with your AI assistant",
-    badge: "AI"
+    badge: "Gemini",
+    isUpdated: true
   },
   { name: "Note Taker", icon: Book, path: "/note-taker", description: "Record and transcribe lectures" },
   { 
@@ -64,7 +70,7 @@ const mainNavItems: NavItem[] = [
   },
   { 
     name: "Analytics", 
-    icon: BarChart, 
+    icon: ActivitySquare, 
     path: "/analytics", 
     description: "Track your study progress",
     isNew: true
@@ -72,11 +78,11 @@ const mainNavItems: NavItem[] = [
 ];
 
 const resourcesNavItems: NavItem[] = [
-  { name: "Features", icon: BookMarked, path: "/features", description: "Explore all features" },
+  { name: "Features", icon: Rocket, path: "/features", description: "Explore all features" },
   { name: "Resources", icon: BookOpen, path: "/resources", description: "Educational resources" },
   { name: "Study Groups", icon: Users, path: "/study-groups", description: "Join study groups", isNew: true },
   { name: "Student Features", icon: GraduationCap, path: "/student-features", description: "Features for students" },
-  { name: "Educator Tools", icon: CalendarDays, path: "/educator-tools", description: "Tools for educators" },
+  { name: "Educator Tools", icon: Lightbulb, path: "/educator-tools", description: "Tools for educators" },
   { name: "Institution Benefits", icon: Building, path: "/institution-benefits", description: "Benefits for institutions" },
 ];
 
@@ -88,6 +94,7 @@ const helpNavItems: NavItem[] = [
 
 const NavigationDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("main");
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -138,16 +145,21 @@ const NavigationDrawer = () => {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 px-3 py-6 relative",
-            isActive && "bg-primary/10 text-primary font-medium"
+            "w-full justify-start gap-3 px-3 py-5 relative rounded-xl",
+            isActive && "bg-primary text-primary-foreground font-medium"
           )}
           onClick={() => handleNavigation(item.path)}
         >
-          <item.icon className={cn("h-5 w-5", isActive && "text-primary")} />
+          <item.icon className={cn("h-5 w-5", isActive && "text-primary-foreground")} />
           <span>{item.name}</span>
           
           {item.badge && (
-            <Badge variant="outline" className="ml-auto bg-primary/10 text-primary text-[10px]">
+            <Badge variant={isActive ? "outline" : "secondary"} 
+              className={cn(
+                "ml-auto text-[10px]",
+                isActive && "bg-white/20 text-primary-foreground border-primary-foreground"
+              )}
+            >
               {item.badge}
             </Badge>
           )}
@@ -155,6 +167,12 @@ const NavigationDrawer = () => {
           {item.isNew && (
             <Badge className="ml-auto bg-green-500 text-white text-[10px]">
               NEW
+            </Badge>
+          )}
+          
+          {item.isUpdated && !item.isNew && (
+            <Badge className="ml-auto bg-blue-500 text-white text-[10px]">
+              UPDATED
             </Badge>
           )}
         </Button>
@@ -170,7 +188,7 @@ const NavigationDrawer = () => {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="fixed top-4 left-4 z-50 h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm shadow-md"
+              className="fixed top-4 left-4 z-50 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm shadow-md"
               onClick={() => setIsOpen(true)}
               aria-label="Open navigation"
             >
@@ -196,29 +214,31 @@ const NavigationDrawer = () => {
             
             <motion.aside
               id="navigation-drawer"
-              className="fixed top-0 left-0 z-50 h-full w-80 bg-background border-r overflow-y-auto neo-morphism"
+              className="fixed top-0 left-0 z-50 h-full w-80 bg-background border-r overflow-hidden rounded-r-xl shadow-xl"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <div className="flex flex-col h-full p-4">
+              <div className="flex flex-col h-full">
                 <motion.div 
-                  className="flex items-center justify-between mb-6"
+                  className="flex items-center justify-between p-4 border-b"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
                   <div className="flex items-center gap-3">
                     <motion.div 
-                      className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary"
+                      className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground"
                       whileHover={{ scale: 1.1, rotate: 5 }}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <PanelLeft className="h-5 w-5" />
+                      <BrainCircuit className="h-5 w-5" />
                     </motion.div>
-                    <h2 className="text-xl font-bold">StudyMate</h2>
-                    <Badge variant="outline" className="ml-2 px-1.5 py-0 text-xs">v2.0</Badge>
+                    <div>
+                      <h2 className="text-xl font-bold">StudyMate</h2>
+                      <p className="text-xs text-muted-foreground">AI-powered study assistant</p>
+                    </div>
                   </div>
                   
                   <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
@@ -228,84 +248,106 @@ const NavigationDrawer = () => {
                   </motion.div>
                 </motion.div>
                 
-                <nav className="space-y-6 flex-1 overflow-y-auto">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3 px-3 flex items-center">
-                      <span>Main</span>
-                      <div className="h-px flex-grow bg-border/60 ml-3"></div>
-                    </h3>
-                    <div className="space-y-1">
-                      {mainNavItems.map((item, index) => (
-                        <motion.div 
-                          key={item.name}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.1 + index * 0.05 }}
-                        >
-                          <NavItemComponent item={item} />
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3 px-3 flex items-center">
-                      <span>Resources</span>
-                      <div className="h-px flex-grow bg-border/60 ml-3"></div>
-                    </h3>
-                    <div className="space-y-1">
-                      {resourcesNavItems.map((item, index) => (
-                        <motion.div 
-                          key={item.name}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.3 + index * 0.05 }}
-                        >
-                          <NavItemComponent item={item} />
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3 px-3 flex items-center">
-                      <span>Help</span>
-                      <div className="h-px flex-grow bg-border/60 ml-3"></div>
-                    </h3>
-                    <div className="space-y-1">
-                      {helpNavItems.map((item, index) => (
-                        <motion.div 
-                          key={item.name}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.4 + index * 0.05 }}
-                        >
-                          <NavItemComponent item={item} />
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                </nav>
+                {/* Navigation sections */}
+                <div className="flex border-b overflow-x-auto scrollbar-none">
+                  {[
+                    { id: "main", label: "Main" },
+                    { id: "resources", label: "Resources" },
+                    { id: "help", label: "Help" }
+                  ].map((section) => (
+                    <Button
+                      key={section.id}
+                      variant="ghost"
+                      className={cn(
+                        "flex-1 rounded-none border-b-2 border-transparent py-2 px-0",
+                        activeSection === section.id && "border-primary text-primary font-medium"
+                      )}
+                      onClick={() => setActiveSection(section.id)}
+                    >
+                      {section.label}
+                    </Button>
+                  ))}
+                </div>
                 
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-y-auto p-3">
+                  <AnimatePresence mode="wait">
+                    {activeSection === "main" && (
+                      <motion.div
+                        key="main-section"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-2"
+                      >
+                        {mainNavItems.map((item, index) => (
+                          <motion.div 
+                            key={item.name}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                          >
+                            <NavItemComponent item={item} />
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    )}
+                    
+                    {activeSection === "resources" && (
+                      <motion.div
+                        key="resources-section"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-2"
+                      >
+                        {resourcesNavItems.map((item, index) => (
+                          <motion.div 
+                            key={item.name}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                          >
+                            <NavItemComponent item={item} />
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    )}
+                    
+                    {activeSection === "help" && (
+                      <motion.div
+                        key="help-section"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-2"
+                      >
+                        {helpNavItems.map((item, index) => (
+                          <motion.div 
+                            key={item.name}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                          >
+                            <NavItemComponent item={item} />
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                
+                {/* Footer */}
                 <motion.div 
-                  className="border-t pt-4 mt-2"
+                  className="p-4 border-t bg-muted/30"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button 
                         variant="outline" 
@@ -318,12 +360,23 @@ const NavigationDrawer = () => {
                       </Button>
                     </motion.div>
                     
-                    <motion.div whileHover={{ rotate: 15 }}>
-                      <ThemeToggle />
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="flex items-center gap-2 text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-950"
+                      >
+                        <DoorOpen className="h-4 w-4" />
+                        Sign Out
+                      </Button>
                     </motion.div>
                   </div>
-                  <div className="mt-4 text-xs text-center text-muted-foreground">
-                    <p>© 2023 StudyMate. All rights reserved.</p>
+                  
+                  <Separator className="my-3" />
+                  
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">© 2023 StudyMate</p>
+                    <ThemeToggle />
                   </div>
                 </motion.div>
               </div>
