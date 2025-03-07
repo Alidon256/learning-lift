@@ -1,19 +1,40 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Home, FileText, Brain, BookOpen, Settings, LogOut, Sparkles, GraduationCap, Building, Book } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Menu, Home, FileText, Brain, BookOpen, Settings, Sparkles, GraduationCap, Building, Book } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const NavigationDrawer = () => {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("main");
+  const location = useLocation();
+  const wrapperRef = useRef<HTMLDivElement>(null);
   
   const closeDrawer = () => setOpen(false);
+  
+  // Close drawer when route changes
+  useEffect(() => {
+    closeDrawer();
+  }, [location.pathname]);
+  
+  // Close drawer when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
   
   const navItems = [
     { label: "Dashboard", icon: Home, path: "/dashboard" },
@@ -29,15 +50,21 @@ const NavigationDrawer = () => {
   ];
   
   return (
-    <>
-      <Button 
-        variant="outline" 
-        size="icon" 
-        className="fixed top-4 left-4 z-50 rounded-full h-10 w-10 shadow-md bg-background"
-        onClick={() => setOpen(true)}
+    <div ref={wrapperRef}>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
       >
-        <Menu className="h-5 w-5" />
-      </Button>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="fixed top-4 left-4 z-50 rounded-full h-10 w-10 shadow-md bg-background"
+          onClick={() => setOpen(true)}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+      </motion.div>
       
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="p-0 flex flex-col w-[300px]">
@@ -55,27 +82,30 @@ const NavigationDrawer = () => {
             </TabsList>
             
             <TabsContent value="main" className="flex-1 px-2 py-4 space-y-1 data-[state=inactive]:hidden">
-              {navItems.map((item, index) => (
-                <motion.div
-                  key={item.path}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.2 }}
-                >
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start relative overflow-hidden group h-10"
-                    onClick={closeDrawer}
-                    asChild
+              <AnimatePresence>
+                {navItems.map((item, index) => (
+                  <motion.div
+                    key={item.path}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ delay: index * 0.1, duration: 0.2 }}
                   >
-                    <Link to={item.path}>
-                      <div className="absolute inset-0 bg-primary/10 w-0 group-hover:w-full transition-all duration-300" />
-                      <item.icon className="h-4 w-4 mr-3" />
-                      {item.label}
-                    </Link>
-                  </Button>
-                </motion.div>
-              ))}
+                    <Button
+                      variant={location.pathname === item.path ? "default" : "ghost"}
+                      className="w-full justify-start relative overflow-hidden group h-10"
+                      onClick={closeDrawer}
+                      asChild
+                    >
+                      <Link to={item.path}>
+                        <div className="absolute inset-0 bg-primary/10 w-0 group-hover:w-full transition-all duration-300" />
+                        <item.icon className="h-4 w-4 mr-3" />
+                        {item.label}
+                      </Link>
+                    </Button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
               
               <Separator className="my-4" />
               
@@ -85,7 +115,7 @@ const NavigationDrawer = () => {
                 transition={{ delay: navItems.length * 0.1, duration: 0.2 }}
               >
                 <Button
-                  variant="ghost"
+                  variant={location.pathname === "/" ? "default" : "ghost"}
                   className="w-full justify-start"
                   onClick={closeDrawer}
                   asChild
@@ -99,26 +129,29 @@ const NavigationDrawer = () => {
             </TabsContent>
             
             <TabsContent value="features" className="flex-1 px-2 py-4 space-y-1 data-[state=inactive]:hidden">
-              {featurePages.map((item, index) => (
-                <motion.div
-                  key={item.path}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.2 }}
-                >
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={closeDrawer}
-                    asChild
+              <AnimatePresence>
+                {featurePages.map((item, index) => (
+                  <motion.div
+                    key={item.path}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ delay: index * 0.1, duration: 0.2 }}
                   >
-                    <Link to={item.path}>
-                      <item.icon className="h-4 w-4 mr-3" />
-                      {item.label}
-                    </Link>
-                  </Button>
-                </motion.div>
-              ))}
+                    <Button
+                      variant={location.pathname === item.path ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={closeDrawer}
+                      asChild
+                    >
+                      <Link to={item.path}>
+                        <item.icon className="h-4 w-4 mr-3" />
+                        {item.label}
+                      </Link>
+                    </Button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
               
               <Separator className="my-4" />
               
@@ -128,7 +161,7 @@ const NavigationDrawer = () => {
                 transition={{ delay: featurePages.length * 0.1, duration: 0.2 }}
               >
                 <Button
-                  variant="ghost"
+                  variant={location.pathname === "/features" ? "default" : "ghost"}
                   className="w-full justify-start"
                   onClick={closeDrawer}
                   asChild
@@ -143,7 +176,12 @@ const NavigationDrawer = () => {
           </Tabs>
           
           <div className="border-t p-4">
-            <div className="flex items-center">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.2 }}
+              className="flex items-center"
+            >
               <Avatar className="h-9 w-9">
                 <AvatarImage src="/placeholder.svg" alt="User" />
                 <AvatarFallback>U</AvatarFallback>
@@ -155,11 +193,11 @@ const NavigationDrawer = () => {
               <Button variant="ghost" size="icon" className="ml-auto">
                 <Settings className="h-4 w-4" />
               </Button>
-            </div>
+            </motion.div>
           </div>
         </SheetContent>
       </Sheet>
-    </>
+    </div>
   );
 };
 
