@@ -24,7 +24,10 @@ import {
   BookOpen,
   Dices,
   BarChart,
-  RefreshCw
+  RefreshCw,
+  Maximize,
+  Minimize,
+  X
 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { toast } from "@/components/ui/use-toast";
@@ -60,8 +63,10 @@ const ChatInterface = () => {
   const [suggestedTopics, setSuggestedTopics] = useState<{id: string; title: string; prompt: string}[]>([]);
   const [suggestedDocs, setSuggestedDocs] = useState<SuggestedDocument[]>([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const chatBoxRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const suggestedTools: SuggestedTool[] = [
     {
@@ -221,6 +226,20 @@ const ChatInterface = () => {
     };
   }, [isListening]);
 
+  // Handle fullscreen mode
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        toggleFullscreen();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isFullscreen]);
+
   const scrollToBottom = () => {
     chatBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   };
@@ -235,49 +254,92 @@ const ChatInterface = () => {
     }
   };
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+    
+    if (chatContainerRef.current) {
+      if (!isFullscreen) {
+        // Apply fullscreen styles
+        document.body.style.overflow = 'hidden';
+      } else {
+        // Remove fullscreen styles
+        document.body.style.overflow = '';
+      }
+    }
+  };
+
   const generateSuggestedTopics = async (userInput: string, aiResponse: string) => {
     setIsFetchingSuggestions(true);
     
     try {
-      // In a real implementation, we would call an API to get related topics based on the conversation
-      // Here, we'll simulate it with some sample topics
-      const suggestions = [
-        { id: "t1", title: "Related mathematical concepts", prompt: `Explain the mathematical concepts related to: ${userInput}` },
-        { id: "t2", title: "Historical development", prompt: `Describe the historical development of: ${userInput}` },
-        { id: "t3", title: "Practical applications", prompt: `What are the practical applications of: ${userInput}` },
-        { id: "t4", title: "Common misconceptions", prompt: `What are common misconceptions about: ${userInput}` }
-      ];
+      // Get related topics based on the conversation
+      const topicsPrompt = `Based on this conversation:
       
-      setSuggestedTopics(suggestions);
+User question: "${userInput}"
+Your response: "${aiResponse}"
+
+Generate 4 follow-up questions or topics that the user might be interested in exploring next. These should be directly related to the conversation and help deepen the user's understanding.
+
+Format each suggestion as a brief, specific question or prompt that the user could ask. Make them diverse but relevant to the main topic of discussion.`;
+
+      const topicsResponse = await aiService.queryGemini(topicsPrompt);
       
-      // Simulate fetching recommended documents
-      const docs = [
-        {
-          id: "d1",
-          title: `Understanding ${userInput.split(' ').slice(0, 3).join(' ')}...`,
-          source: "Khan Academy",
-          url: "https://www.khanacademy.org",
-          snippet: "This comprehensive guide explains the fundamental concepts and applications..."
-        },
-        {
-          id: "d2",
-          title: `Advanced ${userInput.split(' ').slice(0, 2).join(' ')} Tutorial`,
-          source: "MIT OpenCourseWare",
-          url: "https://ocw.mit.edu",
-          snippet: "Designed for advanced students, this resource covers complex topics and practical examples..."
-        },
-        {
-          id: "d3",
-          title: `${userInput.split(' ').slice(0, 2).join(' ')} for Beginners`,
-          source: "Coursera",
-          url: "https://www.coursera.org",
-          snippet: "Start your learning journey with this beginner-friendly introduction to key concepts..."
-        }
-      ];
+      if (topicsResponse && topicsResponse.text) {
+        // Parse the response to extract topics
+        const topicsText = topicsResponse.text;
+        const topics = topicsText
+          .split(/\d\.|\-/)
+          .filter(line => line.trim().length > 0)
+          .map((line, index) => ({
+            id: `t${index}`,
+            title: line.trim().replace(/^["\s]+|["\s]+$/g, ''),
+            prompt: line.trim().replace(/^["\s]+|["\s]+$/g, '')
+          }))
+          .slice(0, 4);
+        
+        setSuggestedTopics(topics);
+      }
       
-      setSuggestedDocs(docs);
+      // Generate related reading materials
+      const docsPrompt = `Based on the user's question about "${userInput.split(' ').slice(0, 5).join(' ')}...", suggest 3 educational resources that would be helpful for further learning. For each resource, provide:
+      
+1. A realistic and specific title that indicates what the resource covers
+2. The source or publisher (like a university, educational platform, or journal)
+3. A brief 1-2 sentence description of what the resource contains
+
+These should be plausible educational resources that would help someone learn more about this topic.`;
+
+      const docsResponse = await aiService.queryGemini(docsPrompt);
+      
+      if (docsResponse && docsResponse.text) {
+        // Create structured document suggestions
+        const docsText = docsResponse.text;
+        const docSections = docsText.split(/\d\.\s/).filter(Boolean);
+        
+        const docs = docSections.map((section, index) => {
+          const lines = section.split('\n').filter(line => line.trim());
+          const title = lines[0] || `Resource on ${userInput.split(' ').slice(0, 3).join(' ')}`;
+          const source = lines.find(line => line.includes(':') || line.includes('-')) || 'Educational Resource';
+          const snippet = lines.slice(1).join(' ').substring(0, 150) + '...';
+          
+          return {
+            id: `d${index}`,
+            title: title.trim().replace(/^["\s]+|["\s]+$/g, ''),
+            source: source.split(':')[0].trim() || 'Educational Platform',
+            url: "https://example.com/resource",
+            snippet: snippet
+          };
+        });
+        
+        setSuggestedDocs(docs);
+      }
     } catch (error) {
       console.error("Error generating suggestions:", error);
+      // Fallback suggestions if AI generation fails
+      setSuggestedTopics([
+        { id: "t1", title: "Tell me more about this topic", prompt: `Tell me more about ${userInput.split(' ').slice(0, 3).join(' ')}` },
+        { id: "t2", title: "Practical applications", prompt: `What are the practical applications of ${userInput.split(' ').slice(0, 3).join(' ')}?` },
+      ]);
     } finally {
       setIsFetchingSuggestions(false);
     }
@@ -386,7 +448,10 @@ const ChatInterface = () => {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div 
+      ref={chatContainerRef}
+      className={`flex flex-col h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}
+    >
       <motion.div 
         className="border-b p-2 flex items-center justify-between bg-muted/30"
         initial={{ opacity: 0 }}
@@ -399,6 +464,28 @@ const ChatInterface = () => {
           <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">Gemini</span>
         </div>
         <div className="flex gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 hover:bg-primary/10 transition-all" 
+                  onClick={toggleFullscreen}
+                >
+                  {isFullscreen ? (
+                    <Minimize className="h-4 w-4" />
+                  ) : (
+                    <Maximize className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isFullscreen ? "Exit fullscreen" : "Fullscreen mode"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -434,10 +521,30 @@ const ChatInterface = () => {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          {isFullscreen && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 hover:bg-primary/10 transition-all" 
+                    onClick={toggleFullscreen}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Close fullscreen</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </motion.div>
 
-      <div className="flex-grow p-4 overflow-y-auto space-y-4">
+      <div className={`flex-grow p-4 overflow-y-auto space-y-4 ${isFullscreen ? 'h-[calc(100vh-120px)]' : ''}`}>
         <AnimatePresence>
           {messages.map((message) => (
             <motion.div
@@ -483,7 +590,7 @@ const ChatInterface = () => {
       </div>
 
       <motion.div 
-        className="p-4 border-t bg-background"
+        className={`p-4 border-t bg-background ${isFullscreen ? 'w-full' : ''}`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.3 }}
@@ -560,7 +667,7 @@ const ChatInterface = () => {
       {/* Suggested Topics and Documents Sidebar (built into the same component) */}
       {(suggestedTopics.length > 0 || suggestedDocs.length > 0) && messages.length > 1 && (
         <motion.div 
-          className="border-t p-3 bg-muted/20 space-y-4 max-h-[300px] overflow-auto"
+          className={`border-t p-3 bg-muted/20 space-y-4 max-h-[300px] overflow-auto ${isFullscreen ? 'w-full' : ''}`}
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           transition={{ duration: 0.3 }}
@@ -574,7 +681,7 @@ const ChatInterface = () => {
               disabled={isFetchingSuggestions}
               className="h-8 w-8 p-0"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
+              <RefreshCw className={`h-3.5 w-3.5 ${isFetchingSuggestions ? 'animate-spin' : ''}`} />
             </Button>
           </div>
           
@@ -587,7 +694,7 @@ const ChatInterface = () => {
                     key={topic.id}
                     variant="outline"
                     size="sm"
-                    className="text-xs h-7 bg-background/80"
+                    className="text-xs h-7 bg-background/80 hover:bg-primary/10 hover:text-primary transition-colors"
                     onClick={() => handleSuggestedTopicSelect(topic.prompt)}
                   >
                     {topic.title}
@@ -600,9 +707,9 @@ const ChatInterface = () => {
           {suggestedDocs.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-xs font-medium text-muted-foreground">Recommended Resources</h4>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 {suggestedDocs.map(doc => (
-                  <Card key={doc.id} className="overflow-hidden">
+                  <Card key={doc.id} className="overflow-hidden hover:shadow-md transition-all">
                     <CardContent className="p-2 text-xs space-y-1">
                       <a 
                         href={doc.url}

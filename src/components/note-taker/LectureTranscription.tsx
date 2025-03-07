@@ -1,9 +1,10 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   FileText, 
   Copy, 
@@ -23,6 +24,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Lecture } from "./LectureLibrary";
 import { aiService } from "@/services/AIService";
 import { useNavigate } from "react-router-dom";
+import jsPDF from "jspdf";
+import { Packer, Document, Paragraph, TextRun } from "docx";
+import { saveAs } from "file-saver";
 
 interface LectureTranscriptionProps {
   lecture: Lecture;
@@ -46,6 +50,9 @@ const LectureTranscription = ({
   const [aiAnswer, setAiAnswer] = useState("");
   const [isAnswering, setIsAnswering] = useState(false);
   const [relatedTopics, setRelatedTopics] = useState<string[]>([]);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"pdf" | "doc">("pdf");
+  const [exportFileName, setExportFileName] = useState(lecture.title || "lecture");
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -80,24 +87,45 @@ const LectureTranscription = ({
     setIsSummarizing(true);
     
     try {
-      const response = await aiService.generateLectureSummary(lecture.transcription);
+      // Improved prompt for better summarization
+      const summaryPrompt = `Please provide a detailed and well-structured summary of the following lecture transcript. Break it down into:
+      
+1. Key Concepts: The main ideas and theories discussed
+2. Important Points: Specific facts, examples, or case studies mentioned
+3. Connections: How these ideas relate to each other or to the broader field
+4. Technical Terms: Any specialized vocabulary with brief definitions
+5. Potential Applications: How this knowledge might be applied in practice
+      
+Transcript: "${lecture.transcription}"
+      
+Format your response with clear headings and bullet points where appropriate. Focus on accuracy and educational value.`;
+      
+      const response = await aiService.generateLectureSummary(summaryPrompt);
       if (response) {
         onUpdateSummary(lecture.id, response.text);
         
-        // Also generate related topics for deeper exploration
-        const topics = [
-          "Historical context of these concepts",
-          "Practical applications in industry",
-          "Recent research developments",
-          "Alternative approaches and methodologies",
-          "Advanced topics in this field"
-        ];
+        // Generate related topics for deeper exploration
+        const topicsPrompt = `Based on this lecture transcript: "${lecture.transcription}"
         
-        setRelatedTopics(topics);
+Generate 5 specific related topics that would help a student deepen their understanding of this material. For each topic, provide a descriptive title that clearly indicates what the student will learn about. Topics should be diverse and cover different aspects of the lecture material, including theoretical foundations, practical applications, historical context, current research, and related fields.`;
+        
+        const topicsResponse = await aiService.queryGemini(topicsPrompt);
+        if (topicsResponse) {
+          // Parse out topics from the response
+          const topicsText = topicsResponse.text;
+          const topics = topicsText
+            .split(/\d\./)
+            .filter(line => line.trim().length > 0)
+            .map(line => line.trim())
+            .slice(0, 5);
+          
+          setRelatedTopics(topics);
+        }
+        
         setActiveTab("summary");
         toast({
           title: "Summary generated",
-          description: "Your lecture has been summarized."
+          description: "Your lecture has been summarized with improved detail and structure."
         });
       } else {
         throw new Error("Failed to generate summary");
@@ -121,11 +149,13 @@ const LectureTranscription = ({
     setAiAnswer("");
     
     try {
-      const contextPrompt = `Based on the following lecture transcription: "${lecture.transcription}". 
-      
+      const contextPrompt = `As an educational assistant, please answer the following question based on this lecture transcript. 
+
+Lecture: "${lecture.transcription}"
+
 Question: ${questionInput}
 
-Please provide a detailed and accurate answer:`;
+Please provide a detailed and accurate answer that directly addresses the question. Include specific information from the transcript where relevant, and clarify any concepts that might need additional explanation. If the question cannot be fully answered based on the transcript alone, provide what information you can from the transcript and then suggest what additional information might be needed.`;
       
       const response = await aiService.queryGemini(contextPrompt);
       if (response) {
@@ -152,10 +182,19 @@ Please provide a detailed and accurate answer:`;
     setExpansionTopic(topic);
     
     try {
-      const prompt = `Based on this lecture transcription: "${lecture.transcription}"
+      const prompt = `Based on this lecture transcript: "${lecture.transcription}"
       
 Please provide an in-depth exploration of the topic: "${topic}"
-Include additional resources, references, and deeper explanations to help the student understand this aspect better.`;
+
+Structure your response as follows:
+1. Overview: A brief introduction to this specific aspect of the lecture
+2. Key Concepts: Detailed explanations of the main ideas
+3. Examples and Applications: Real-world examples showing how these concepts are applied
+4. Current Research: Recent developments or ongoing research in this area
+5. Related Concepts: How this topic connects to other ideas in the field
+6. Learning Resources: Specific books, articles, videos, or courses that would help students learn more about this topic
+
+Format your response with clear headings and use examples where appropriate. Focus on making complex ideas accessible while maintaining academic rigor.`;
       
       const response = await aiService.queryGemini(prompt);
       if (response) {
@@ -176,14 +215,128 @@ Include additional resources, references, and deeper explanations to help the st
     }
   };
   
-  const handleExport = (format: "pdf" | "doc") => {
-    const content = activeTab === "transcription" 
-      ? lecture.transcription 
-      : activeTab === "summary" 
-        ? lecture.summary 
-        : activeTab === "expansion"
-          ? topicExpansion
-          : "";
+  const handleExport = () => {
+    setShowExportDialog(true);
+  };
+  
+  const getActiveContent = () => {
+    switch (activeTab) {
+      case "transcription":
+        return lecture.transcription || "";
+      case "summary":
+        return lecture.summary || "";
+      case "expansion":
+        return topicExpansion || "";
+      case "qa":
+        return `Question: ${questionInput}\n\nAnswer: ${aiAnswer}`;
+      default:
+        return "";
+    }
+  };
+  
+  const exportToPDF = (filename: string, content: string) => {
+    try {
+      const doc = new jsPDF();
+      const title = `${lecture.title} - ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`;
+      const date = new Date().toLocaleDateString();
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.text(title, 20, 20);
+      
+      // Add date
+      doc.setFontSize(12);
+      doc.text(`Date: ${date}`, 20, 30);
+      doc.text(`Duration: ${lecture.duration || "N/A"}`, 20, 37);
+      
+      // Add content
+      doc.setFontSize(12);
+      
+      // Split long text into paragraphs and pages
+      const textLines = doc.splitTextToSize(content, 170);
+      let y = 50;
+      const pageHeight = doc.internal.pageSize.height - 20;
+      
+      for (let i = 0; i < textLines.length; i++) {
+        if (y > pageHeight) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(textLines[i], 20, y);
+        y += 7;
+      }
+      
+      doc.save(`${filename}.pdf`);
+      toast({
+        title: "Export successful",
+        description: `Your document has been exported as ${filename}.pdf`
+      });
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting to PDF.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const exportToDoc = async (filename: string, content: string) => {
+    try {
+      const title = `${lecture.title} - ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`;
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: title,
+                    bold: true,
+                    size: 36
+                  })
+                ]
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: `Date: ${new Date().toLocaleDateString()}`, size: 24 })]
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: `Duration: ${lecture.duration || "N/A"}`, size: 24 })]
+              }),
+              new Paragraph({
+                children: [new TextRun({ text: '' })]
+              }),
+              // Split content into paragraphs
+              ...content.split('\n').map(para => 
+                new Paragraph({
+                  children: [new TextRun({ text: para })]
+                })
+              )
+            ]
+          }
+        ]
+      });
+      
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `${filename}.docx`);
+      
+      toast({
+        title: "Export successful",
+        description: `Your document has been exported as ${filename}.docx`
+      });
+    } catch (error) {
+      console.error("Error exporting to DOCX:", error);
+      toast({
+        title: "Export failed", 
+        description: "There was an error exporting to DOCX.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const executeExport = () => {
+    const content = getActiveContent();
     
     if (!content) {
       toast({
@@ -194,21 +347,13 @@ Include additional resources, references, and deeper explanations to help the st
       return;
     }
     
-    toast({
-      title: `Exporting as ${format.toUpperCase()}`,
-      description: "Your document will be downloaded shortly."
-    });
+    if (exportFormat === "pdf") {
+      exportToPDF(exportFileName, content);
+    } else {
+      exportToDoc(exportFileName, content);
+    }
     
-    // Simulated export
-    setTimeout(() => {
-      const element = document.createElement("a");
-      const file = new Blob([content], {type: 'text/plain'});
-      element.href = URL.createObjectURL(file);
-      element.download = `${lecture.title}_${activeTab}.${format}`;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-    }, 1000);
+    setShowExportDialog(false);
   };
   
   return (
@@ -224,22 +369,11 @@ Include additional resources, references, and deeper explanations to help the st
             variant="outline"
             size="sm"
             className="gap-1"
-            onClick={() => handleExport("pdf")}
+            onClick={handleExport}
             disabled={!lecture.transcription}
           >
             <FileDown className="h-4 w-4" />
-            PDF
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1"
-            onClick={() => handleExport("doc")}
-            disabled={!lecture.transcription}
-          >
-            <FilePlus className="h-4 w-4" />
-            DOC
+            Export
           </Button>
         </div>
       </div>
@@ -492,6 +626,64 @@ Include additional resources, references, and deeper explanations to help the st
           </div>
         </TabsContent>
       </Tabs>
+      
+      {/* Export dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Options</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Export Format</label>
+              <div className="flex gap-2">
+                <Button 
+                  variant={exportFormat === "pdf" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setExportFormat("pdf")}
+                  className="flex-1"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  PDF
+                </Button>
+                <Button 
+                  variant={exportFormat === "doc" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setExportFormat("doc")}
+                  className="flex-1"
+                >
+                  <FilePlus className="h-4 w-4 mr-2" />
+                  DOCX
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="filename" className="text-sm font-medium">File Name</label>
+              <Textarea
+                id="filename"
+                value={exportFileName}
+                onChange={(e) => setExportFileName(e.target.value)}
+                placeholder="Enter file name"
+                className="resize-none"
+                rows={1}
+              />
+            </div>
+            
+            <div className="pt-2 flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowExportDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={executeExport}>
+                Export
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
