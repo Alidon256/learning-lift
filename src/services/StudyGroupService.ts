@@ -1,5 +1,5 @@
 
-import { StudyGroup } from "@/models/StudyGroup";
+import { StudyGroup, StudyGroupMember, StudyGroupMessage, StudyGroupResource, StudyGroupSession } from "@/models/StudyGroup";
 import { v4 as uuidv4 } from "uuid";
 
 // Mock data for study groups
@@ -314,7 +314,7 @@ export const studyGroupService = {
       return Promise.reject(new Error("Study group not found"));
     }
     
-    const newSession = {
+    const newSession: StudyGroupSession = {
       ...session,
       id: uuidv4(),
       isCompleted: false,
@@ -338,7 +338,7 @@ export const studyGroupService = {
       return Promise.reject(new Error("Study group not found"));
     }
     
-    const newResource = {
+    const newResource: StudyGroupResource = {
       ...resource,
       id: uuidv4(),
       addedBy: "current-user", // In a real app, this would be the authenticated user's ID

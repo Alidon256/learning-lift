@@ -6,7 +6,7 @@ import { studyGroupService } from "@/services/StudyGroupService";
 import NavigationDrawer from "@/components/layout/NavigationDrawer";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { motion } from "framer-motion";
-import { Loader2, ArrowLeft, Users, Calendar, BookOpen, Shield } from "lucide-react";
+import { Loader2, ArrowLeft, Users, Calendar, BookOpen, Shield, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +16,7 @@ import StudyGroupChatPanel from "@/components/study-groups/StudyGroupChatPanel";
 import UpcomingSessionsPanel from "@/components/study-groups/UpcomingSessionsPanel";
 import ResourcesPanel from "@/components/study-groups/ResourcesPanel";
 import GroupMembersPanel from "@/components/study-groups/GroupMembersPanel";
+import VideoConferencePanel from "@/components/study-groups/VideoConferencePanel";
 import AddResourceDialog from "@/components/study-groups/AddResourceDialog";
 import AddSessionDialog from "@/components/study-groups/AddSessionDialog";
 import { format } from "date-fns";
@@ -39,7 +40,19 @@ const StudyGroupDetails = () => {
     try {
       const group = await studyGroupService.getStudyGroupById(groupId);
       if (group) {
-        setStudyGroup(group);
+        // Add mock status for UI demo
+        const enhancedMembers = group.members.map(member => ({
+          ...member,
+          status: Math.random() > 0.5 ? 'online' : 'offline',
+          lastSeen: member.status === 'offline' ? 
+            new Date(Date.now() - Math.floor(Math.random() * 48) * 60 * 60 * 1000).toISOString() : 
+            undefined
+        }));
+        
+        setStudyGroup({
+          ...group,
+          members: enhancedMembers
+        });
       } else {
         toast({
           title: "Group not found",
@@ -106,6 +119,7 @@ const StudyGroupDetails = () => {
 
   const isCurrentUserMember = studyGroup?.members.some(member => member.id === "current-user");
   const isCurrentUserAdmin = studyGroup?.members.some(member => member.id === "current-user" && member.role === "admin");
+  const onlineMembers = studyGroup?.members.filter(member => member.status === 'online').length || 0;
 
   if (isLoading) {
     return (
@@ -174,7 +188,7 @@ const StudyGroupDetails = () => {
             <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
-                {studyGroup.members.length} members
+                {studyGroup.members.length} members • {onlineMembers} online
               </div>
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
@@ -220,6 +234,10 @@ const StudyGroupDetails = () => {
             <TabsTrigger value="chat" className="flex items-center gap-1">
               Chat
             </TabsTrigger>
+            <TabsTrigger value="video" className="flex items-center gap-1">
+              <Video className="h-4 w-4 mr-1" />
+              Video Conference
+            </TabsTrigger>
             <TabsTrigger value="sessions" className="flex items-center gap-1">
               Sessions
             </TabsTrigger>
@@ -244,6 +262,24 @@ const StudyGroupDetails = () => {
                 <Shield className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
                 <h3 className="text-lg font-medium mb-2">Members Only</h3>
                 <p className="text-muted-foreground mb-4">You need to join this group to participate in the chat.</p>
+                <Button onClick={handleJoinGroup} disabled={isJoining}>
+                  {isJoining ? "Joining..." : "Join Group"}
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="video" className="mt-0">
+            {isCurrentUserMember ? (
+              <VideoConferencePanel
+                group={studyGroup}
+                onConferenceEnded={() => fetchStudyGroup(studyGroup.id)}
+              />
+            ) : (
+              <div className="bg-muted/30 p-6 rounded-lg text-center">
+                <Video className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                <h3 className="text-lg font-medium mb-2">Members Only</h3>
+                <p className="text-muted-foreground mb-4">You need to join this group to participate in video conferences.</p>
                 <Button onClick={handleJoinGroup} disabled={isJoining}>
                   {isJoining ? "Joining..." : "Join Group"}
                 </Button>
