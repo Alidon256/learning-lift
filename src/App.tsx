@@ -15,6 +15,8 @@ import Resources from "./pages/Resources";
 import StudentFeatures from "./pages/StudentFeatures";
 import EducatorTools from "./pages/EducatorTools";
 import InstitutionBenefits from "./pages/InstitutionBenefits";
+import StudyGroups from "./pages/StudyGroups";
+import StudyGroupDetails from "./pages/StudyGroupDetails";
 import NavigationDrawer from "@/components/layout/NavigationDrawer";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,8 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/assistant" element={<Assistant />} />
             <Route path="/note-taker" element={<NoteTaker />} />
+            <Route path="/study-groups" element={<StudyGroups />} />
+            <Route path="/study-groups/:id" element={<StudyGroupDetails />} />
             <Route path="/features" element={<Features />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/student-features" element={<StudentFeatures />} />
