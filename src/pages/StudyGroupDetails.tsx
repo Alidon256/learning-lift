@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { StudyGroup } from "@/models/StudyGroup";
@@ -19,6 +18,7 @@ import GroupMembersPanel from "@/components/study-groups/GroupMembersPanel";
 import VideoConferencePanel from "@/components/study-groups/VideoConferencePanel";
 import AddResourceDialog from "@/components/study-groups/AddResourceDialog";
 import AddSessionDialog from "@/components/study-groups/AddSessionDialog";
+import AudioCallButton from "@/components/study-groups/AudioCallButton";
 import { format } from "date-fns";
 
 const StudyGroupDetails = () => {
@@ -40,11 +40,10 @@ const StudyGroupDetails = () => {
     try {
       const group = await studyGroupService.getStudyGroupById(groupId);
       if (group) {
-        // Add mock status for UI demo
         const enhancedMembers = group.members.map(member => ({
           ...member,
-          status: Math.random() > 0.5 ? 'online' : 'offline',
-          lastSeen: member.status === 'offline' ? 
+          status: Math.random() > 0.5 ? 'online' : 'offline' as 'online' | 'offline',
+          lastSeen: Math.random() > 0.5 ? 
             new Date(Date.now() - Math.floor(Math.random() * 48) * 60 * 60 * 1000).toISOString() : 
             undefined
         }));
@@ -119,7 +118,8 @@ const StudyGroupDetails = () => {
 
   const isCurrentUserMember = studyGroup?.members.some(member => member.id === "current-user");
   const isCurrentUserAdmin = studyGroup?.members.some(member => member.id === "current-user" && member.role === "admin");
-  const onlineMembers = studyGroup?.members.filter(member => member.status === 'online').length || 0;
+  const onlineMembers = studyGroup?.members.filter(member => member.status === 'online') || [];
+  const onlineMembersCount = onlineMembers.length;
 
   if (isLoading) {
     return (
@@ -188,7 +188,7 @@ const StudyGroupDetails = () => {
             <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
-                {studyGroup.members.length} members • {onlineMembers} online
+                {studyGroup.members.length} members • {onlineMembersCount} online
               </div>
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
@@ -210,6 +210,12 @@ const StudyGroupDetails = () => {
                     onResourceAdded={() => fetchStudyGroup(studyGroup.id)}
                   />
                 </>
+              )}
+              {onlineMembersCount > 0 && (
+                <AudioCallButton 
+                  group={studyGroup} 
+                  onlineMembers={onlineMembers}
+                />
               )}
               <Button 
                 variant="outline" 

@@ -1,4 +1,3 @@
-
 export interface StudyGroupMember {
   id: string;
   name: string;
@@ -7,6 +6,7 @@ export interface StudyGroupMember {
   joinedAt: string;
   status?: 'online' | 'offline' | 'away' | 'busy';
   lastSeen?: string;
+  isTyping?: boolean;
 }
 
 export interface StudyGroupMessage {
@@ -19,6 +19,12 @@ export interface StudyGroupMessage {
   attachments?: StudyGroupAttachment[];
   reactions?: StudyGroupReaction[];
   isEdited?: boolean;
+  replyTo?: {
+    messageId: string;
+    content: string;
+    userName: string;
+  };
+  readBy?: string[]; // list of user IDs who have read the message
 }
 
 export interface StudyGroupAttachment {
@@ -47,6 +53,10 @@ export interface StudyGroupSession {
   host?: string; // user ID of the host
   attendees?: string[]; // user IDs of attendees
   notes?: string;
+  chatHistory?: StudyGroupMessage[];
+  duration?: number; // in minutes
+  quality?: 'SD' | 'HD' | 'Full HD';
+  recordingUrl?: string;
 }
 
 export interface StudyGroupResource {
@@ -77,6 +87,10 @@ export interface VideoConferenceSession {
     waitingRoom: boolean;
     recordSession: boolean;
   };
+  chatHistory?: StudyGroupMessage[];
+  duration?: number; // in minutes
+  quality?: 'SD' | 'HD' | 'Full HD';
+  recordingUrl?: string;
 }
 
 export interface VideoConferenceParticipant {
@@ -87,6 +101,9 @@ export interface VideoConferenceParticipant {
   isVideo: boolean;
   isAudio: boolean;
   isScreenSharing: boolean;
+  networkQuality?: 'excellent' | 'good' | 'fair' | 'poor';
+  raisedHand?: boolean;
+  pinnedBy?: string[]; // list of user IDs who have pinned this participant
 }
 
 export interface StudyGroup {
@@ -103,8 +120,6 @@ export interface StudyGroup {
   coverImage?: string;
   activeConference?: VideoConferenceSession;
 }
-
-// Adding new features to improve the platform
 
 export interface StudyGroupAnalytics {
   totalSessions: number;
@@ -200,4 +215,57 @@ export interface StudyGroupGoal {
   assignedTo: string[];
   createdBy: string;
   createdAt: string;
+}
+
+export interface StudyGroupDirectMessage {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  content: string;
+  timestamp: string;
+  isRead: boolean;
+  attachments?: StudyGroupAttachment[];
+}
+
+export interface BreakoutRoom {
+  id: string;
+  name: string;
+  participants: string[]; // user IDs
+  createdAt: string;
+  duration?: number; // in minutes
+  topic?: string;
+}
+
+export interface PresentationSlide {
+  id: string;
+  imageUrl: string;
+  notes?: string;
+  order: number;
+}
+
+export interface SharedPresentation {
+  id: string;
+  title: string;
+  createdBy: string;
+  createdAt: string;
+  currentSlide: number;
+  slides: PresentationSlide[];
+}
+
+export interface WhiteboardItem {
+  id: string;
+  type: 'text' | 'drawing' | 'shape' | 'image';
+  content: any; // specific to the type
+  position: { x: number; y: number };
+  size?: { width: number; height: number };
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface SharedWhiteboard {
+  id: string;
+  title: string;
+  createdBy: string;
+  createdAt: string;
+  items: WhiteboardItem[];
 }
