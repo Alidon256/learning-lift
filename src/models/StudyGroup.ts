@@ -103,3 +103,101 @@ export interface StudyGroup {
   coverImage?: string;
   activeConference?: VideoConferenceSession;
 }
+
+// Adding new features to improve the platform
+
+export interface StudyGroupAnalytics {
+  totalSessions: number;
+  totalHoursStudied: number;
+  activeMembers: number;
+  resourcesShared: number;
+  participation: {
+    userId: string;
+    userName: string;
+    sessionsAttended: number;
+    messagesCount: number;
+    resourcesShared: number;
+  }[];
+}
+
+export interface StudyGroupTag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface StudyGroupPoll {
+  id: string;
+  createdBy: string;
+  question: string;
+  options: {
+    id: string;
+    text: string;
+    votes: string[]; // user IDs
+  }[];
+  createdAt: string;
+  expiresAt?: string;
+  isActive: boolean;
+}
+
+export interface StudyGroupQuiz {
+  id: string;
+  title: string;
+  description: string;
+  createdBy: string;
+  createdAt: string;
+  questions: {
+    id: string;
+    question: string;
+    options: string[];
+    correctOption: number;
+    explanation?: string;
+  }[];
+  attempts: {
+    userId: string;
+    userName: string;
+    score: number;
+    completedAt: string;
+  }[];
+}
+
+export interface StudyGroupEvent {
+  id: string;
+  title: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  location?: string;
+  isVirtual: boolean;
+  meetingLink?: string;
+  createdBy: string;
+  attendees: {
+    userId: string;
+    status: 'going' | 'maybe' | 'not-going';
+  }[];
+}
+
+export interface StudyGroupFlashcardDeck {
+  id: string;
+  title: string;
+  description: string;
+  createdBy: string;
+  createdAt: string;
+  tags: string[];
+  cards: {
+    id: string;
+    front: string;
+    back: string;
+  }[];
+}
+
+export interface StudyGroupGoal {
+  id: string;
+  title: string;
+  description: string;
+  dueDate?: string;
+  status: 'not-started' | 'in-progress' | 'completed';
+  assignedTo: string[];
+  createdBy: string;
+  createdAt: string;
+}

@@ -17,6 +17,7 @@ import EducatorTools from "./pages/EducatorTools";
 import InstitutionBenefits from "./pages/InstitutionBenefits";
 import StudyGroups from "./pages/StudyGroups";
 import StudyGroupDetails from "./pages/StudyGroupDetails";
+import Analytics from "./pages/Analytics";
 import NavigationDrawer from "@/components/layout/NavigationDrawer";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/student-features" element={<StudentFeatures />} />
             <Route path="/educator-tools" element={<EducatorTools />} />
             <Route path="/institution-benefits" element={<InstitutionBenefits />} />
+            <Route path="/analytics" element={<Analytics />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

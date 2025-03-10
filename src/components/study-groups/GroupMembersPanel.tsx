@@ -4,21 +4,45 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { format, formatDistanceToNow } from "date-fns";
-import { Clock, MoreHorizontal, Shield, User } from "lucide-react";
+import { 
+  Clock, 
+  MoreHorizontal, 
+  Shield, 
+  User, 
+  MessageSquare,
+  Video,
+  UserPlus,
+  Mail,
+  Star
+} from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
-  DropdownMenuItem, 
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface GroupMembersPanelProps {
   members: StudyGroupMember[];
+  onInviteToVideoCall?: (memberId: string) => void;
+  onSendDirectMessage?: (memberId: string) => void;
+  isAdmin?: boolean;
 }
 
-const GroupMembersPanel = ({ members }: GroupMembersPanelProps) => {
+const GroupMembersPanel = ({ 
+  members, 
+  onInviteToVideoCall, 
+  onSendDirectMessage,
+  isAdmin = false 
+}: GroupMembersPanelProps) => {
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const { toast } = useToast();
+  
   // Sort members by status (online first), then by role (admin first), then by join date
   const sortedMembers = [...members].sort((a, b) => {
     // Online status takes precedence
@@ -36,6 +60,25 @@ const GroupMembersPanel = ({ members }: GroupMembersPanelProps) => {
   // Count online members
   const onlineCount = members.filter(m => m.status === "online").length;
   
+  // Filter members by status if filter is active
+  const filteredMembers = filterStatus 
+    ? sortedMembers.filter(m => m.status === filterStatus)
+    : sortedMembers;
+  
+  const handlePromoteToAdmin = (memberId: string) => {
+    toast({
+      title: "Action taken",
+      description: "Member promoted to admin successfully",
+    });
+  };
+  
+  const handleRemoveMember = (memberId: string) => {
+    toast({
+      title: "Action taken",
+      description: "Member removed from group",
+    });
+  };
+  
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -45,12 +88,47 @@ const GroupMembersPanel = ({ members }: GroupMembersPanelProps) => {
             {onlineCount} Online
           </Badge>
         </div>
+        
+        <div className="flex gap-2 mt-2">
+          <Button 
+            variant={filterStatus === null ? "secondary" : "outline"} 
+            size="sm" 
+            onClick={() => setFilterStatus(null)}
+            className="text-xs h-7 px-2"
+          >
+            All
+          </Button>
+          <Button 
+            variant={filterStatus === "online" ? "secondary" : "outline"} 
+            size="sm" 
+            onClick={() => setFilterStatus("online")}
+            className="text-xs h-7 px-2"
+          >
+            Online
+          </Button>
+          <Button 
+            variant={filterStatus === "offline" ? "secondary" : "outline"} 
+            size="sm" 
+            onClick={() => setFilterStatus("offline")}
+            className="text-xs h-7 px-2"
+          >
+            Offline
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[420px] pr-4">
           <div className="space-y-3">
-            {sortedMembers.map(member => (
-              <MemberItem key={member.id} member={member} />
+            {filteredMembers.map(member => (
+              <MemberItem 
+                key={member.id} 
+                member={member} 
+                onInviteToVideoCall={onInviteToVideoCall}
+                onSendDirectMessage={onSendDirectMessage}
+                isAdmin={isAdmin}
+                onPromoteToAdmin={handlePromoteToAdmin}
+                onRemoveMember={handleRemoveMember}
+              />
             ))}
           </div>
         </ScrollArea>
@@ -61,9 +139,21 @@ const GroupMembersPanel = ({ members }: GroupMembersPanelProps) => {
 
 interface MemberItemProps {
   member: StudyGroupMember;
+  onInviteToVideoCall?: (memberId: string) => void;
+  onSendDirectMessage?: (memberId: string) => void;
+  onPromoteToAdmin?: (memberId: string) => void;
+  onRemoveMember?: (memberId: string) => void;
+  isAdmin?: boolean;
 }
 
-const MemberItem = ({ member }: MemberItemProps) => {
+const MemberItem = ({ 
+  member, 
+  onInviteToVideoCall, 
+  onSendDirectMessage,
+  onPromoteToAdmin,
+  onRemoveMember,
+  isAdmin 
+}: MemberItemProps) => {
   const statusColors = {
     online: "bg-green-500",
     busy: "bg-red-500",
@@ -71,7 +161,8 @@ const MemberItem = ({ member }: MemberItemProps) => {
     offline: "bg-gray-400"
   };
   
-  const statusColor = member.status ? statusColors[member.status] : statusColors.offline;
+  const status = member.status || "offline";
+  const statusColor = statusColors[status];
   
   const isCurrentUser = member.id === "current-user";
   
@@ -85,7 +176,7 @@ const MemberItem = ({ member }: MemberItemProps) => {
           </Avatar>
           <span
             className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background ${statusColor}`}
-            title={member.status ? member.status.charAt(0).toUpperCase() + member.status.slice(1) : "Offline"}
+            title={status.charAt(0).toUpperCase() + status.slice(1)}
           />
         </div>
         <div>
@@ -124,13 +215,40 @@ const MemberItem = ({ member }: MemberItemProps) => {
             </DropdownMenuItem>
             {!isCurrentUser && (
               <>
-                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                  Message
+                <DropdownMenuItem 
+                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={() => onSendDirectMessage && onSendDirectMessage(member.id)}
+                >
+                  <MessageSquare className="h-4 w-4" /> Message
                 </DropdownMenuItem>
                 {member.status === "online" && (
-                  <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                    Invite to Video Call
+                  <DropdownMenuItem 
+                    className="flex items-center gap-2 cursor-pointer"
+                    onClick={() => onInviteToVideoCall && onInviteToVideoCall(member.id)}
+                  >
+                    <Video className="h-4 w-4" /> Invite to Video Call
                   </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+                  <Mail className="h-4 w-4" /> Email
+                </DropdownMenuItem>
+                {isAdmin && member.role !== "admin" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      className="flex items-center gap-2 cursor-pointer text-blue-500"
+                      onClick={() => onPromoteToAdmin && onPromoteToAdmin(member.id)}
+                    >
+                      <Star className="h-4 w-4" /> Promote to Admin
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="flex items-center gap-2 cursor-pointer text-red-500"
+                      onClick={() => onRemoveMember && onRemoveMember(member.id)}
+                    >
+                      <UserPlus className="h-4 w-4" /> Remove from Group
+                    </DropdownMenuItem>
+                  </>
                 )}
               </>
             )}
