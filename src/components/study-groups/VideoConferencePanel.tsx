@@ -2,20 +2,20 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { VideoConferenceSession, VideoConferenceParticipant } from "@/models/StudyGroup";
+import { StudyGroup, VideoConferenceSession, VideoConferenceParticipant } from "@/models/StudyGroup";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Mic, MicOff, Video, VideoOff, ScreenShare, User, UserPlus, MessageSquare, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { v4 as uuidv4 } from "uuid";
 
 interface VideoConferencePanelProps {
-  activeSession?: VideoConferenceSession;
-  onStartConference: (session: VideoConferenceSession) => void;
-  onEndConference: () => void;
+  group: StudyGroup;
+  onConferenceEnded: () => void;
 }
 
-const VideoConferencePanel = ({ activeSession, onStartConference, onEndConference }: VideoConferencePanelProps) => {
+const VideoConferencePanel = ({ group, onConferenceEnded }: VideoConferencePanelProps) => {
   const [isStarting, setIsStarting] = useState(false);
+  const activeSession = group.activeConference;
   
   const handleStartConference = () => {
     setIsStarting(true);
@@ -51,7 +51,7 @@ const VideoConferencePanel = ({ activeSession, onStartConference, onEndConferenc
     
     // In a real app, this would connect to a video conferencing service
     setTimeout(() => {
-      onStartConference(newSession);
+      onConferenceEnded();
       setIsStarting(false);
     }, 1500);
   };
@@ -90,7 +90,7 @@ const VideoConferencePanel = ({ activeSession, onStartConference, onEndConferenc
             </CardTitle>
             <CardDescription>{activeSession.title}</CardDescription>
           </div>
-          <Button variant="destructive" size="sm" onClick={onEndConference}>
+          <Button variant="destructive" size="sm" onClick={onConferenceEnded}>
             End Call
           </Button>
         </div>

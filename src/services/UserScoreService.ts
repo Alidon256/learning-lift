@@ -205,11 +205,19 @@ const generateAIInsights = async (score: UserScore): Promise<UserScoreInsight[]>
       
       if (aiResponse && typeof aiResponse === 'string' && aiResponse.length > 0) {
         // Parse AI response and add it as an insight
+        const lines = aiResponse.split('\n');
+        const content = lines[0] || "AI generated insight";
+        const actionLines = lines.slice(1);
+        
+        const suggestedActions = actionLines
+          .filter(line => line.trim().length > 0)
+          .map(line => line.replace(/^- /, '').trim());
+          
         mockInsights.push({
           id: uuidv4(),
           type: "improvement",
-          content: aiResponse.split('\n')[0] || "AI generated insight",
-          suggestedActions: aiResponse.split('\n').slice(1).map(line => line.replace(/^- /, '')),
+          content: content,
+          suggestedActions: suggestedActions.length > 0 ? suggestedActions : ["Review your work", "Practice regularly"],
         });
       }
     } catch (error) {
