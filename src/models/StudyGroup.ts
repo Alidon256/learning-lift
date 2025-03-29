@@ -1,4 +1,3 @@
-
 export interface StudyGroupMember {
   id: string;
   name: string;
@@ -88,7 +87,7 @@ export interface VideoConferenceSession {
     recordSession: boolean;
   };
   chatHistory?: StudyGroupMessage[];
-  duration: number; // in minutes
+  duration: number; // in minutes - required field
   quality?: 'SD' | 'HD' | 'Full HD';
   recordingUrl?: string;
 }
@@ -268,4 +267,47 @@ export interface SharedWhiteboard {
   createdBy: string;
   createdAt: string;
   items: WhiteboardItem[];
+}
+
+export interface UserScore {
+  id: string;
+  userId: string;
+  userName: string;
+  subjectId: string;
+  subjectName: string;
+  score: number;
+  maxScore: number;
+  submittedAt: string;
+  gradePercentage?: number;
+  letterGrade?: string;
+  category: 'quiz' | 'exam' | 'assignment' | 'project' | 'other';
+  title: string;
+  description?: string;
+  feedback?: string;
+  aiInsights?: UserScoreInsight[];
+}
+
+export interface UserScoreInsight {
+  id: string;
+  type: 'strength' | 'weakness' | 'improvement';
+  content: string;
+  suggestedActions?: string[];
+  resources?: {
+    title: string;
+    url: string;
+    type: 'article' | 'video' | 'course' | 'book' | 'other';
+  }[];
+}
+
+export interface GradingScale {
+  id: string;
+  name: string;
+  scale: {
+    minPercentage: number;
+    maxPercentage: number;
+    grade: string;
+  }[];
+  isDefault: boolean;
+  createdBy: string;
+  createdAt: string;
 }
