@@ -1,3 +1,4 @@
+
 export interface StudyGroupMember {
   id: string;
   name: string;
@@ -54,7 +55,6 @@ export interface StudyGroupSession {
   attendees?: string[]; // user IDs of attendees
   notes?: string;
   chatHistory?: StudyGroupMessage[];
-  duration?: number; // in minutes
   quality?: 'SD' | 'HD' | 'Full HD';
   recordingUrl?: string;
 }
@@ -88,7 +88,7 @@ export interface VideoConferenceSession {
     recordSession: boolean;
   };
   chatHistory?: StudyGroupMessage[];
-  duration?: number; // in minutes
+  duration: number; // in minutes
   quality?: 'SD' | 'HD' | 'Full HD';
   recordingUrl?: string;
 }
