@@ -203,9 +203,9 @@ const generateAIInsights = async (score: UserScore): Promise<UserScoreInsight[]>
       
       const aiResponse = await aiService.queryGemini(promptTemplate);
       
-      if (aiResponse && typeof aiResponse === 'string' && aiResponse.length > 0) {
+      if (aiResponse && typeof aiResponse.text === 'string' && aiResponse.text.length > 0) {
         // Parse AI response and add it as an insight
-        const lines = aiResponse.split('\n');
+        const lines = aiResponse.text.split('\n');
         const content = lines[0] || "AI generated insight";
         const actionLines = lines.slice(1);
         

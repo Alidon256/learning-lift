@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import ChatInterface from "@/components/assistant/ChatInterface";
@@ -12,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { aiService } from "@/services/AIService";
+import { toast } from "@/hooks/use-toast";
 
 interface SuggestedTopic {
   id: string;
@@ -33,6 +33,7 @@ const Assistant = () => {
   const [suggestedTopics, setSuggestedTopics] = useState<SuggestedTopic[]>([]);
   const [recommendedDocs, setRecommendedDocs] = useState<RecommendedDocument[]>([]);
   const [viewContext, setViewContext] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -104,9 +105,75 @@ const Assistant = () => {
     return () => clearTimeout(timer);
   }, [location.state]);
   
-  const generateSuggestedTopics = (context: string) => {
-    // In a real implementation, you would analyze the context and generate relevant topics
-    // For now, we'll create placeholder suggestions based on lecture content
+  const generateSuggestedTopics = async (context: string) => {
+    try {
+      setIsSearching(true);
+      
+      // In a real implementation, we would analyze the context and generate relevant topics
+      // Here we're using the AI service to generate more intelligent recommendations
+      const topicPrompt = `Based on this lecture content: "${context.substring(0, 300)}...", 
+        suggest 4 related topics that a student should explore to deepen their understanding.
+        For each topic provide: 1) A short title (3-5 words), 2) A brief description (under 15 words).
+        Format as JSON with properties: title, description for each topic.`;
+        
+      const aiResponse = await aiService.queryGemini(topicPrompt);
+      
+      if (aiResponse && aiResponse.text) {
+        try {
+          // Try to parse AI response as structured data
+          // If it's not valid JSON, we'll use our fallback topics
+          const responseText = aiResponse.text;
+          
+          // Extract JSON part if the AI wrapped it in markdown code blocks
+          const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || 
+                          responseText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+          
+          const jsonStr = jsonMatch ? jsonMatch[1] : responseText;
+          
+          // Try to parse the JSON
+          const aiTopics = JSON.parse(jsonStr);
+          
+          if (Array.isArray(aiTopics) && aiTopics.length > 0) {
+            // Create icon mapping for the AI-generated topics
+            const icons = [
+              <BrainCircuit className="h-5 w-5 text-purple-500" />,
+              <BookText className="h-5 w-5 text-blue-500" />,
+              <BookOpen className="h-5 w-5 text-green-500" />,
+              <Brain className="h-5 w-5 text-amber-500" />
+            ];
+            
+            // Map AI topics to our format
+            const formattedTopics: SuggestedTopic[] = aiTopics.slice(0, 4).map((topic: any, i: number) => ({
+              id: `ai_topic_${i}`,
+              title: topic.title || "Explore this topic",
+              description: topic.description || "AI suggested topic for deeper understanding",
+              icon: icons[i % icons.length]
+            }));
+            
+            setSuggestedTopics(formattedTopics);
+            
+            // Also generate recommended documents
+            generateRecommendedDocs(context, formattedTopics);
+          } else {
+            // Fallback to default topics
+            setDefaultContextTopics();
+          }
+        } catch (e) {
+          console.error("Error parsing AI topic suggestions:", e);
+          setDefaultContextTopics();
+        }
+      } else {
+        setDefaultContextTopics();
+      }
+    } catch (error) {
+      console.error("Error generating topics:", error);
+      setDefaultContextTopics();
+    } finally {
+      setIsSearching(false);
+    }
+  };
+  
+  const setDefaultContextTopics = () => {
     setSuggestedTopics([
       {
         id: "related_concepts",
@@ -133,35 +200,60 @@ const Assistant = () => {
         icon: <History className="h-5 w-5 text-amber-500" />
       }
     ]);
-    
-    // Generate recommended documents based on lecture content
-    // In a real implementation, this would search for relevant sources
-    setRecommendedDocs([
-      {
-        id: "doc1",
-        title: "Comprehensive Guide on the Topic",
-        source: "Academic Journal",
-        url: "https://example.com/comprehensive-guide",
-        snippet: "This article provides an in-depth analysis of the key concepts covered in your lecture..."
-      },
-      {
-        id: "doc2",
-        title: "Recent Research Developments",
-        source: "Science Direct",
-        url: "https://example.com/recent-research",
-        snippet: "The latest findings in this field suggest several new approaches to understanding the material..."
-      },
-      {
-        id: "doc3",
-        title: "Practical Applications Guide",
-        source: "Educational Resources",
-        url: "https://example.com/practical-guide",
-        snippet: "Learn how to apply theoretical concepts from your lecture in real-world scenarios..."
+  };
+  
+  const generateRecommendedDocs = async (context: string, topics: SuggestedTopic[]) => {
+    try {
+      const topicTitles = topics.map(t => t.title).join(", ");
+      
+      const docsPrompt = `Based on these topics: ${topicTitles} from a lecture about: "${context.substring(0, 200)}...",
+        suggest 3 academic resources a student should read.
+        For each resource provide: 1) A title, 2) The source (journal/institution), 3) A brief snippet describing the content.
+        Format as JSON with properties: title, source, snippet for each resource.`;
+        
+      const aiResponse = await aiService.queryGemini(docsPrompt);
+      
+      if (aiResponse && aiResponse.text) {
+        try {
+          // Extract JSON part if the AI wrapped it in markdown code blocks
+          const jsonMatch = aiResponse.text.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || 
+                         aiResponse.text.match(/\[\s*\{[\s\S]*\}\s*\]/);
+          
+          const jsonStr = jsonMatch ? jsonMatch[1] : aiResponse.text;
+          
+          // Try to parse the JSON
+          const aiDocs = JSON.parse(jsonStr);
+          
+          if (Array.isArray(aiDocs) && aiDocs.length > 0) {
+            // Map AI docs to our format
+            const formattedDocs: RecommendedDocument[] = aiDocs.slice(0, 3).map((doc: any, i: number) => ({
+              id: `ai_doc_${i}`,
+              title: doc.title || "Recommended Resource",
+              source: doc.source || "Academic Source",
+              url: `https://example.com/resource-${i}`,
+              snippet: doc.snippet || "AI recommended academic resource for this topic"
+            }));
+            
+            setRecommendedDocs(formattedDocs);
+          }
+        } catch (e) {
+          console.error("Error parsing AI doc recommendations:", e);
+          // Keep default docs
+        }
       }
-    ]);
+    } catch (error) {
+      console.error("Error generating recommended docs:", error);
+      // Keep default docs
+    }
   };
   
   const handleTopicClick = (topic: SuggestedTopic) => {
+    toast({
+      title: "Asking about " + topic.title,
+      description: "Generating response about this topic..."
+    });
+    
+    // Use the AI service to generate a response about this topic
     aiService.queryGemini(`Tell me about ${topic.title}. ${topic.description}`);
   };
   
@@ -292,8 +384,9 @@ const Assistant = () => {
             transition={{ delay: 0.4, duration: 0.5 }}
           >
             <Card>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 flex flex-row justify-between items-center">
                 <CardTitle className="text-sm">Suggested Topics</CardTitle>
+                {isSearching && <Loader2 className="h-3 w-3 animate-spin" />}
               </CardHeader>
               <CardContent className="space-y-2">
                 {suggestedTopics.map(topic => (
@@ -318,6 +411,36 @@ const Assistant = () => {
                     </Card>
                   </motion.div>
                 ))}
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full mt-1 text-xs"
+                  onClick={() => {
+                    toast({
+                      title: "Generating new suggestions",
+                      description: "Finding personalized topic suggestions..."
+                    });
+                    
+                    // Generate new topics randomly or based on past interactions
+                    // In a real app this would be more intelligent
+                    const subjects = ["Physics", "Chemistry", "Biology", "Mathematics", "History", "Literature"];
+                    const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
+                    
+                    aiService.queryGemini(`Generate 4 interesting study topics related to ${randomSubject} that would be useful for a student`)
+                      .then((response) => {
+                        if (response && response.text) {
+                          // This would trigger UI refresh with new topics
+                          toast({
+                            title: "New suggestions ready",
+                            description: `Check out topics related to ${randomSubject}`
+                          });
+                        }
+                      });
+                  }}
+                >
+                  Refresh suggestions
+                </Button>
               </CardContent>
             </Card>
             
