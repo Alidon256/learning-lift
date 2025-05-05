@@ -218,6 +218,7 @@ const generateAIInsights = async (score: UserScore): Promise<UserScoreInsight[]>
           type: "improvement",
           content: content,
           suggestedActions: suggestedActions.length > 0 ? suggestedActions : ["Review your work", "Practice regularly"],
+          resources: [],
         });
       }
     } catch (error) {

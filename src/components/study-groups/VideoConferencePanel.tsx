@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Mic, MicOff, Video, VideoOff, ScreenShare, User, UserPlus, MessageSquare, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { v4 as uuidv4 } from "uuid";
+import { toast } from "@/hooks/use-toast";
 
 interface VideoConferencePanelProps {
   group: StudyGroup;
@@ -51,6 +52,11 @@ const VideoConferencePanel = ({ group, onConferenceEnded }: VideoConferencePanel
     
     // In a real app, this would connect to a video conferencing service
     setTimeout(() => {
+      toast({
+        title: "Conference started",
+        description: "You've successfully started a video conference",
+      });
+      // Simulate starting a conference (in a real app, this would update the study group)
       onConferenceEnded();
       setIsStarting(false);
     }, 1500);
@@ -90,7 +96,13 @@ const VideoConferencePanel = ({ group, onConferenceEnded }: VideoConferencePanel
             </CardTitle>
             <CardDescription>{activeSession.title}</CardDescription>
           </div>
-          <Button variant="destructive" size="sm" onClick={onConferenceEnded}>
+          <Button variant="destructive" size="sm" onClick={() => {
+            onConferenceEnded();
+            toast({
+              title: "Conference ended",
+              description: "You've successfully ended the video conference",
+            });
+          }}>
             End Call
           </Button>
         </div>
@@ -104,22 +116,70 @@ const VideoConferencePanel = ({ group, onConferenceEnded }: VideoConferencePanel
         </div>
         
         <div className="flex justify-center mt-4 space-x-2">
-          <Button size="icon" variant="outline" className="rounded-full w-10 h-10">
+          <Button 
+            size="icon" 
+            variant="outline" 
+            className="rounded-full w-10 h-10"
+            onClick={() => toast({
+              title: "Microphone toggled",
+              description: "Your microphone has been toggled",
+            })}
+          >
             <Mic className="h-5 w-5" />
           </Button>
-          <Button size="icon" variant="outline" className="rounded-full w-10 h-10">
+          <Button 
+            size="icon" 
+            variant="outline" 
+            className="rounded-full w-10 h-10"
+            onClick={() => toast({
+              title: "Video toggled",
+              description: "Your video has been toggled",
+            })}
+          >
             <Video className="h-5 w-5" />
           </Button>
-          <Button size="icon" variant="outline" className="rounded-full w-10 h-10">
+          <Button 
+            size="icon" 
+            variant="outline" 
+            className="rounded-full w-10 h-10"
+            onClick={() => toast({
+              title: "Screen sharing",
+              description: "Screen sharing has been toggled",
+            })}
+          >
             <ScreenShare className="h-5 w-5" />
           </Button>
-          <Button size="icon" variant="outline" className="rounded-full w-10 h-10">
+          <Button 
+            size="icon" 
+            variant="outline" 
+            className="rounded-full w-10 h-10"
+            onClick={() => toast({
+              title: "Chat",
+              description: "Opening chat panel",
+            })}
+          >
             <MessageSquare className="h-5 w-5" />
           </Button>
-          <Button size="icon" variant="outline" className="rounded-full w-10 h-10">
+          <Button 
+            size="icon" 
+            variant="outline" 
+            className="rounded-full w-10 h-10"
+            onClick={() => toast({
+              title: "Invite participants",
+              description: "You can invite more participants to this call",
+            })}
+          >
             <UserPlus className="h-5 w-5" />
           </Button>
-          <Button size="icon" variant="outline" className="rounded-full w-10 h-10">
+          <Button 
+            size="icon" 
+            variant="outline" 
+            className="rounded-full w-10 h-10"
+            onClick={() => toast({
+              title: "Settings",
+              description: "Conference settings panel",
+            })}
+          >
             <Settings className="h-5 w-5" />
           </Button>
         </div>
